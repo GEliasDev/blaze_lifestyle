@@ -42,7 +42,8 @@ describe("invitations flow", () => {
     const inv = await request(app).post("/api/coach/invitations")
       .set("Authorization", `Bearer ${coachToken}`).send({ email: "two@x.com" });
     const token = inv.body.token;
-    await request(app).post(`/api/auth/invitations/${token}/accept`).send({ name: "A", password: "secret12" });
+    const first = await request(app).post(`/api/auth/invitations/${token}/accept`).send({ name: "A", password: "secret12" });
+    expect(first.status).toBe(201);
     const second = await request(app).post(`/api/auth/invitations/${token}/accept`).send({ name: "B", password: "secret12" });
     expect(second.status).toBe(400);
   });

@@ -30,13 +30,17 @@ export const invitationsService = {
     if (!inv || inv.status !== "pending" || inv.expiresAt < new Date()) {
       throw new HttpError(400, "Invitation is not valid");
     }
+    // Atomically claim the invitation to prevent double-accept races.
+    const [claimed] = await InvitationModel.update(
+      { status: "accepted" },
+      { where: { id: inv.id, status: "pending" } },
+    );
+    if (!claimed) throw new HttpError(400, "Invitation is not valid");
     const client = await UserModel.create({
       role: "client", email: inv.email, name, locale: "es",
       passwordHash: await hashPassword(password),
     });
     await CoachClientModel.create({ coachId: inv.coachId, clientId: client.id });
-    inv.status = "accepted";
-    await inv.save();
     const payload = { sub: client.id, role: client.role };
     return { accessToken: signAccess(payload), refreshToken: signRefresh(payload), user: authService.toUser(client) };
   },
