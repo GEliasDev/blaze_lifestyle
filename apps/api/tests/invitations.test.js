@@ -47,4 +47,13 @@ describe("invitations flow", () => {
     const second = await request(app).post(`/api/auth/invitations/${token}/accept`).send({ name: "B", password: "secret12" });
     expect(second.status).toBe(400);
   });
+
+  it("rejects accepting an invite for an already-registered email with 409", async () => {
+    const app = createApp();
+    const inv1 = await request(app).post("/api/coach/invitations").set("Authorization", `Bearer ${coachToken}`).send({ email: "dup@x.com" });
+    await request(app).post(`/api/auth/invitations/${inv1.body.token}/accept`).send({ name: "Dup One", password: "secret12" });
+    const inv2 = await request(app).post("/api/coach/invitations").set("Authorization", `Bearer ${coachToken}`).send({ email: "dup@x.com" });
+    const res = await request(app).post(`/api/auth/invitations/${inv2.body.token}/accept`).send({ name: "Dup Two", password: "secret12" });
+    expect(res.status).toBe(409);
+  });
 });

@@ -17,5 +17,8 @@ export async function seedCoach() {
 
 // Allow running directly: `npm run seed`
 if (process.argv[1] && process.argv[1].endsWith("seed.js")) {
-  seedCoach().then(() => sequelize.close()).then(() => console.log("Coach seeded"));
+  seedCoach()
+    .then(() => sequelize.close())
+    .then(() => console.log("Coach seeded"))
+    .catch((err) => { console.error(err); process.exit(1); });
 }
