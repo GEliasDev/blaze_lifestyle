@@ -3,6 +3,7 @@ import cors from "cors";
 import { config } from "./config.js";
 import { errorHandler } from "./middleware/error.js";
 import { authRouter } from "./modules/auth/auth.route.js";
+import { coachInvitationsRouter, inviteAcceptRouter } from "./modules/invitations/invitations.route.js";
 
 export function createApp() {
   const app = express();
@@ -10,6 +11,8 @@ export function createApp() {
   app.use(express.json());
   app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
   app.use("/api/auth", authRouter);
+  app.use("/api/auth", inviteAcceptRouter);
+  app.use("/api/coach", coachInvitationsRouter);
   app.use(errorHandler);
   return app;
 }
