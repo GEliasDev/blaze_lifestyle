@@ -40,11 +40,12 @@ designed so they slot in as sibling modules without rework.
 
 | Layer | Choice |
 |-------|--------|
-| Frontend | React + Vite + TypeScript + Tailwind CSS |
+| Language | **JavaScript (ESM) — no TypeScript** (`.js` / `.jsx`) |
+| Frontend | React + Vite + Tailwind CSS |
 | Routing | React Router (role-based route trees) |
 | i18n | Bilingual ES/EN (react-i18next), per-user `locale` |
 | PWA | Installable (manifest + service worker, app-shell caching) |
-| API | Node + Express + TypeScript |
+| API | Node + Express |
 | ORM | Sequelize over PostgreSQL |
 | Validation | Zod (request/response schemas) |
 | Auth | JWT (access + refresh), invitation-based onboarding |
@@ -84,7 +85,7 @@ blaze_lifestyle/
 │       │   └── server.ts
 │       └── tests/
 ├── packages/
-│   └── shared/                   # shared TS types, constants (categories), Zod schemas
+│   └── shared/                   # shared enums/constants (categories) + Zod schemas
 └── docs/
     └── superpowers/specs/
 ```
@@ -92,11 +93,11 @@ blaze_lifestyle/
 ### Backend module layering (every module follows this pattern)
 ```
 modules/<name>/
-├── <name>.model.ts        # Sequelize model → PostgreSQL table
-├── <name>.schema.ts       # Zod schemas for input/output validation
-├── <name>.service.ts      # business logic (no req/res here)
-├── <name>.controller.ts   # request handlers (parse → call service → respond)
-└── <name>.route.ts        # Express router wiring + middleware
+├── <name>.model.js        # Sequelize model → PostgreSQL table
+├── <name>.schema.js       # Zod schemas for input/output validation
+├── <name>.service.js      # business logic (no req/res here)
+├── <name>.controller.js   # request handlers (parse → call service → respond)
+└── <name>.route.js        # Express router wiring + middleware
 ```
 
 ---

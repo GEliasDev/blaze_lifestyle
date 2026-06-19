@@ -4,13 +4,14 @@
 
 **Goal:** Stand up the Blaze Lifestyle monorepo with a working Express+PostgreSQL API (auth, invitation-based onboarding, R2 photo storage helper) and a React+Vite PWA shell (router, i18n, design system), so the Nutrition feature plans can build on it.
 
-**Architecture:** npm workspaces monorepo with `apps/api` (Express + Sequelize + PostgreSQL), `apps/web` (React + Vite + Tailwind), and `packages/shared` (TypeScript types, enums, Zod schemas shared by both). The API is organized by module using a strict Model · Schema · Service · Controller · Route layering. Auth is JWT-based; the single coach is seeded; clients join via invitation links.
+**Architecture:** npm workspaces monorepo with `apps/api` (Express + Sequelize + PostgreSQL), `apps/web` (React + Vite + Tailwind), and `packages/shared` (enums/constants + Zod schemas shared by both). The API is organized by module using a strict Model · Schema · Service · Controller · Route layering. Auth is JWT-based; the single coach is seeded; clients join via invitation links.
 
-**Tech Stack:** TypeScript, Express, Sequelize, PostgreSQL, Zod, jsonwebtoken, bcrypt, @aws-sdk/client-s3 (Cloudflare R2), sharp, React, Vite, Tailwind CSS, React Router, react-i18next, Vitest, Supertest.
+**Tech Stack:** **JavaScript (ESM, no TypeScript)**, Express, Sequelize, PostgreSQL, Zod, jsonwebtoken, bcryptjs, @aws-sdk/client-s3 (Cloudflare R2), sharp, React, Vite, Tailwind CSS, React Router, react-i18next, Vitest, Supertest.
 
 ## Global Constraints
 
-- **Backend module layering:** every API module lives in `apps/api/src/modules/<name>/` with files `<name>.model.ts`, `<name>.schema.ts`, `<name>.service.ts`, `<name>.controller.ts`, `<name>.route.ts`. Controllers stay thin; business logic lives in services (no `req`/`res` in services).
+- **Language: JavaScript (ESM) only — no TypeScript.** Every package sets `"type": "module"`; use `import`/`export`. Node code is `.js`; React components are `.jsx`. Node ESM imports of local files use **explicit file extensions** (e.g. `import { x } from "./enums.js"`).
+- **Backend module layering:** every API module lives in `apps/api/src/modules/<name>/` with files `<name>.model.js`, `<name>.schema.js`, `<name>.service.js`, `<name>.controller.js`, `<name>.route.js`. Controllers stay thin; business logic lives in services (no `req`/`res` in services).
 - **Authorization in two layers:** route-level role guard (`client` | `coach`) AND service-level ownership checks.
 - **Validation:** all request input validated with Zod at the controller boundary before reaching services.
 - **Roles:** `client` | `coach`. **Locales:** `es` | `en` (default `es`). **Meal categories:** `Breakfast`, `AM Snack`, `Lunch`, `PM Snack`, `Dinner`, `Supplement`.
@@ -25,144 +26,76 @@
 
 ```
 package.json                         # workspaces root
-tsconfig.base.json
 packages/shared/
   package.json
-  src/index.ts                       # re-exports
-  src/enums.ts                       # Role, Locale, MealCategory, Compliance
-  src/types.ts                       # User, AuthResponse, etc.
-  src/schemas.ts                     # shared Zod schemas (login, accept-invite)
+  src/index.js                       # re-exports ./enums.js, ./schemas.js
+  src/enums.js                       # ROLES, LOCALES, MEAL_CATEGORIES, COMPLIANCE
+  src/schemas.js                     # shared Zod schemas (login, accept-invite)
 apps/api/
   package.json
-  tsconfig.json
   .env.example
-  src/config.ts                      # env parsing
-  src/lib/db.ts                      # Sequelize instance
-  src/lib/storage.ts                 # R2 + sharp helper
-  src/lib/jwt.ts                     # sign/verify access+refresh
-  src/lib/password.ts                # hash/compare
-  src/middleware/error.ts            # central error handler
-  src/middleware/validate.ts         # Zod validation middleware
-  src/middleware/auth.ts             # authGuard + roleGuard
-  src/modules/users/users.model.ts
-  src/modules/auth/auth.schema.ts
-  src/modules/auth/auth.service.ts
-  src/modules/auth/auth.controller.ts
-  src/modules/auth/auth.route.ts
-  src/modules/invitations/invitations.model.ts
-  src/modules/invitations/invitations.schema.ts
-  src/modules/invitations/invitations.service.ts
-  src/modules/invitations/invitations.controller.ts
-  src/modules/invitations/invitations.route.ts
-  src/modules/coaching/coachClients.model.ts
-  src/db/seed.ts                     # seeds the single coach
-  src/app.ts                         # express app factory
-  src/server.ts                      # listen
-  tests/*.test.ts
+  src/config.js                      # env parsing
+  src/lib/db.js                      # Sequelize instance
+  src/lib/storage.js                 # R2 + sharp helper
+  src/lib/jwt.js                     # sign/verify access+refresh
+  src/lib/password.js                # hash/compare
+  src/middleware/error.js            # central error handler + HttpError
+  src/middleware/validate.js         # Zod validation middleware
+  src/middleware/auth.js             # authGuard + roleGuard
+  src/modules/users/users.model.js
+  src/modules/auth/auth.schema.js
+  src/modules/auth/auth.service.js
+  src/modules/auth/auth.controller.js
+  src/modules/auth/auth.route.js
+  src/modules/invitations/invitations.model.js
+  src/modules/invitations/invitations.schema.js
+  src/modules/invitations/invitations.service.js
+  src/modules/invitations/invitations.controller.js
+  src/modules/invitations/invitations.route.js
+  src/modules/coaching/coachClients.model.js
+  src/db/seed.js                     # seeds the single coach
+  src/app.js                         # express app factory
+  src/server.js                      # listen
+  tests/*.test.js
 apps/web/
   package.json
-  vite.config.ts
+  vite.config.js
   tailwind.config.js
+  postcss.config.js
   index.html
   public/manifest.webmanifest
-  src/main.tsx
+  src/main.jsx
+  src/App.jsx
+  src/test-setup.js
   src/styles/tokens.css
-  src/lib/i18n.ts
-  src/lib/api.ts
-  src/lib/auth.tsx                   # AuthProvider + useAuth
-  src/components/Button.tsx
-  src/app/router.tsx
-  src/features/auth/LoginScreen.tsx
+  src/lib/i18n.js
+  src/lib/api.js
+  src/lib/auth.jsx                    # AuthProvider + useAuth
+  src/locales/es.json
+  src/locales/en.json
+  src/components/Button.jsx
+  src/app/router.jsx
+  src/features/auth/LoginScreen.jsx
 ```
 
 ---
 
-### Task 1: Monorepo scaffold
+### Task 2: Shared enums and Zod schemas
 
 **Files:**
-- Create: `package.json`, `tsconfig.base.json`, `packages/shared/package.json`, `packages/shared/src/index.ts`
+- Create: `packages/shared/src/enums.js`, `packages/shared/src/schemas.js`
+- Test: `packages/shared/src/schemas.test.js`
+- (Already exists from Task 1: `packages/shared/src/index.js` re-exporting `./enums.js` and `./schemas.js`; `package.json` with vitest.)
 
 **Interfaces:**
-- Produces: npm workspaces resolving `@blaze/shared`, `@blaze/api`, `@blaze/web`.
-
-- [ ] **Step 1: Create root `package.json`**
-
-```json
-{
-  "name": "blaze-lifestyle",
-  "private": true,
-  "workspaces": ["packages/*", "apps/*"],
-  "scripts": {
-    "test": "npm run test --workspaces --if-present"
-  }
-}
-```
-
-- [ ] **Step 2: Create `tsconfig.base.json`**
-
-```json
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "declaration": true,
-    "resolveJsonModule": true
-  }
-}
-```
-
-- [ ] **Step 3: Create `packages/shared/package.json`**
-
-```json
-{
-  "name": "@blaze/shared",
-  "version": "0.0.0",
-  "type": "module",
-  "main": "src/index.ts",
-  "types": "src/index.ts",
-  "dependencies": { "zod": "^3.23.8" }
-}
-```
-
-- [ ] **Step 4: Create `packages/shared/src/index.ts`**
-
-```ts
-export * from "./enums";
-export * from "./types";
-export * from "./schemas";
-```
-
-- [ ] **Step 5: Install and commit**
-
-Run: `npm install`
-Expected: workspaces linked, no errors.
-
-```bash
-git add -A
-git commit -m "chore: monorepo workspace scaffold"
-```
-
----
-
-### Task 2: Shared enums, types, and schemas
-
-**Files:**
-- Create: `packages/shared/src/enums.ts`, `packages/shared/src/types.ts`, `packages/shared/src/schemas.ts`
-- Test: `packages/shared/src/schemas.test.ts`
-
-**Interfaces:**
-- Produces: `ROLES`, `LOCALES`, `MEAL_CATEGORIES`, `COMPLIANCE`; types `Role`, `Locale`, `User`, `AuthResponse`; schemas `loginSchema`, `acceptInviteSchema`.
+- Produces: `ROLES`, `LOCALES`, `MEAL_CATEGORIES`, `COMPLIANCE` (arrays of string literals); Zod schemas `loginSchema`, `acceptInviteSchema`.
 
 - [ ] **Step 1: Write the failing test**
 
-`packages/shared/src/schemas.test.ts`:
-```ts
+`packages/shared/src/schemas.test.js`:
+```js
 import { describe, it, expect } from "vitest";
-import { loginSchema, acceptInviteSchema } from "./schemas";
+import { loginSchema, acceptInviteSchema } from "./schemas.js";
 
 describe("loginSchema", () => {
   it("accepts valid credentials", () => {
@@ -180,77 +113,44 @@ describe("acceptInviteSchema", () => {
 });
 ```
 
-- [ ] **Step 2: Add Vitest to shared and run to verify failure**
+- [ ] **Step 2: Run to verify failure**
 
-Add to `packages/shared/package.json` scripts: `"test": "vitest run"` and devDependency `"vitest": "^2.0.0"`. Run: `npm install`.
 Run: `npm test -w @blaze/shared`
-Expected: FAIL ("Cannot find module ./schemas").
+Expected: FAIL ("Cannot find module ./schemas.js").
 
-- [ ] **Step 3: Create `enums.ts`**
+- [ ] **Step 3: Create `enums.js`**
 
-```ts
-export const ROLES = ["client", "coach"] as const;
-export type Role = (typeof ROLES)[number];
-
-export const LOCALES = ["es", "en"] as const;
-export type Locale = (typeof LOCALES)[number];
-
-export const MEAL_CATEGORIES = [
-  "Breakfast", "AM Snack", "Lunch", "PM Snack", "Dinner", "Supplement",
-] as const;
-export type MealCategory = (typeof MEAL_CATEGORIES)[number];
-
-export const COMPLIANCE = ["yes", "no", "na"] as const;
-export type Compliance = (typeof COMPLIANCE)[number];
+```js
+export const ROLES = ["client", "coach"];
+export const LOCALES = ["es", "en"];
+export const MEAL_CATEGORIES = ["Breakfast", "AM Snack", "Lunch", "PM Snack", "Dinner", "Supplement"];
+export const COMPLIANCE = ["yes", "no", "na"];
 ```
 
-- [ ] **Step 4: Create `types.ts`**
+- [ ] **Step 4: Create `schemas.js`**
 
-```ts
-import type { Role, Locale } from "./enums";
-
-export interface User {
-  id: string;
-  role: Role;
-  email: string;
-  name: string;
-  locale: Locale;
-  active: boolean;
-}
-
-export interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: User;
-}
-```
-
-- [ ] **Step 5: Create `schemas.ts`**
-
-```ts
+```js
 import { z } from "zod";
 
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
 });
-export type LoginInput = z.infer<typeof loginSchema>;
 
 export const acceptInviteSchema = z.object({
   name: z.string().min(1),
   password: z.string().min(8),
 });
-export type AcceptInviteInput = z.infer<typeof acceptInviteSchema>;
 ```
 
-- [ ] **Step 6: Run tests and commit**
+- [ ] **Step 5: Run tests and commit**
 
 Run: `npm test -w @blaze/shared`
 Expected: PASS.
 
 ```bash
 git add -A
-git commit -m "feat(shared): enums, types, and auth schemas"
+git commit -m "feat(shared): enums and auth Zod schemas"
 ```
 
 ---
@@ -258,11 +158,12 @@ git commit -m "feat(shared): enums, types, and auth schemas"
 ### Task 3: API skeleton + health endpoint
 
 **Files:**
-- Create: `apps/api/package.json`, `apps/api/tsconfig.json`, `apps/api/.env.example`, `apps/api/src/config.ts`, `apps/api/src/middleware/error.ts`, `apps/api/src/app.ts`, `apps/api/src/server.ts`
-- Test: `apps/api/tests/health.test.ts`
+- Create: `apps/api/package.json`, `apps/api/.env.example`, `apps/api/src/config.js`, `apps/api/src/middleware/error.js`, `apps/api/src/app.js`, `apps/api/src/server.js`
+- Test: `apps/api/tests/health.test.js`
+- (Note: `apps/api/.env` already exists locally with real values; do not overwrite it. Create `.env.example` only.)
 
 **Interfaces:**
-- Produces: `createApp(): Express` (used by all integration tests and `server.ts`); `config` object with typed env.
+- Produces: `createApp()` returning an Express app (used by all integration tests and `server.js`); `config` object with parsed env; `HttpError` class and `errorHandler` middleware.
 
 - [ ] **Step 1: Create `apps/api/package.json`**
 
@@ -272,15 +173,16 @@ git commit -m "feat(shared): enums, types, and auth schemas"
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "node --watch src/server.js",
     "test": "vitest run",
-    "seed": "tsx src/db/seed.ts"
+    "seed": "node src/db/seed.js"
   },
   "dependencies": {
     "@blaze/shared": "*",
     "express": "^4.19.2",
     "sequelize": "^6.37.3",
     "pg": "^8.12.0",
+    "pg-hstore": "^2.3.4",
     "jsonwebtoken": "^9.0.2",
     "bcryptjs": "^2.4.3",
     "zod": "^3.23.8",
@@ -291,31 +193,13 @@ git commit -m "feat(shared): enums, types, and auth schemas"
     "cors": "^2.8.5"
   },
   "devDependencies": {
-    "tsx": "^4.16.0",
-    "typescript": "^5.5.0",
     "vitest": "^2.0.0",
-    "supertest": "^7.0.0",
-    "@types/express": "^4.17.21",
-    "@types/jsonwebtoken": "^9.0.6",
-    "@types/bcryptjs": "^2.4.6",
-    "@types/multer": "^1.4.11",
-    "@types/supertest": "^6.0.2",
-    "@types/cors": "^2.8.17"
+    "supertest": "^7.0.0"
   }
 }
 ```
 
-- [ ] **Step 2: Create `apps/api/tsconfig.json`**
-
-```json
-{
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
-  "include": ["src"]
-}
-```
-
-- [ ] **Step 3: Create `apps/api/.env.example`**
+- [ ] **Step 2: Create `apps/api/.env.example`**
 
 ```
 PORT=4000
@@ -332,12 +216,12 @@ R2_BUCKET=blaze-photos
 WEB_ORIGIN=http://localhost:5173
 ```
 
-- [ ] **Step 4: Create `apps/api/src/config.ts`**
+- [ ] **Step 3: Create `apps/api/src/config.js`**
 
-```ts
+```js
 import "dotenv/config";
 
-function required(name: string): string {
+function required(name) {
   const v = process.env[name];
   if (!v) throw new Error(`Missing env var: ${name}`);
   return v;
@@ -363,19 +247,19 @@ export const config = {
 };
 ```
 
-- [ ] **Step 5: Create `apps/api/src/middleware/error.ts`**
+- [ ] **Step 4: Create `apps/api/src/middleware/error.js`**
 
-```ts
-import type { Request, Response, NextFunction } from "express";
+```js
 import { ZodError } from "zod";
 
 export class HttpError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(status, message) {
     super(message);
+    this.status = status;
   }
 }
 
-export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction) {
+export function errorHandler(err, _req, res, _next) {
   if (err instanceof ZodError) {
     return res.status(400).json({ error: "ValidationError", details: err.flatten() });
   }
@@ -387,13 +271,13 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
 }
 ```
 
-- [ ] **Step 6: Write the failing test**
+- [ ] **Step 5: Write the failing test**
 
-`apps/api/tests/health.test.ts`:
-```ts
+`apps/api/tests/health.test.js`:
+```js
 import { describe, it, expect } from "vitest";
 import request from "supertest";
-import { createApp } from "../src/app";
+import { createApp } from "../src/app.js";
 
 describe("GET /api/health", () => {
   it("returns ok", async () => {
@@ -404,20 +288,20 @@ describe("GET /api/health", () => {
 });
 ```
 
-- [ ] **Step 7: Run to verify failure**
+- [ ] **Step 6: Run to verify failure**
 
 Run: `npm install && npm test -w @blaze/api`
-Expected: FAIL ("Cannot find module ../src/app").
+Expected: FAIL ("Cannot find module ../src/app.js").
 
-- [ ] **Step 8: Create `apps/api/src/app.ts`**
+- [ ] **Step 7: Create `apps/api/src/app.js`**
 
-```ts
-import express, { type Express } from "express";
+```js
+import express from "express";
 import cors from "cors";
-import { config } from "./config";
-import { errorHandler } from "./middleware/error";
+import { config } from "./config.js";
+import { errorHandler } from "./middleware/error.js";
 
-export function createApp(): Express {
+export function createApp() {
   const app = express();
   app.use(cors({ origin: config.webOrigin, credentials: true }));
   app.use(express.json());
@@ -427,22 +311,21 @@ export function createApp(): Express {
 }
 ```
 
-- [ ] **Step 9: Create `apps/api/src/server.ts`**
+- [ ] **Step 8: Create `apps/api/src/server.js`**
 
-```ts
-import { createApp } from "./app";
-import { config } from "./config";
+```js
+import { createApp } from "./app.js";
+import { config } from "./config.js";
 
 createApp().listen(config.port, () => {
   console.log(`API listening on :${config.port}`);
 });
 ```
 
-- [ ] **Step 10: Run test and commit**
+- [ ] **Step 9: Run test and commit**
 
 Run: `npm test -w @blaze/api`
-Expected: PASS.
-(For the test to load config, create `apps/api/.env` from `.env.example`.)
+Expected: PASS. (`apps/api/.env` already exists with `DATABASE_URL` etc.)
 
 ```bash
 git add -A
@@ -454,18 +337,18 @@ git commit -m "feat(api): express app skeleton with health endpoint"
 ### Task 4: Database layer (Sequelize) + User model
 
 **Files:**
-- Create: `apps/api/src/lib/db.ts`, `apps/api/src/modules/users/users.model.ts`
-- Test: `apps/api/tests/user-model.test.ts`
+- Create: `apps/api/src/lib/db.js`, `apps/api/src/modules/users/users.model.js`
+- Test: `apps/api/tests/user-model.test.js`
 
 **Interfaces:**
 - Consumes: `config.databaseUrl`.
-- Produces: `sequelize` instance; `UserModel` with attributes `id, role, email, passwordHash, name, locale, active`; `initModels()` that wires models and returns them; `syncTestDb()` helper.
+- Produces: `sequelize` instance (exported from `lib/db.js`); `UserModel` with attributes `id, role, email, passwordHash, name, locale, active` (column names underscored: `password_hash`, etc.).
 
-- [ ] **Step 1: Create `apps/api/src/lib/db.ts`**
+- [ ] **Step 1: Create `apps/api/src/lib/db.js`**
 
-```ts
+```js
 import { Sequelize } from "sequelize";
-import { config } from "../config";
+import { config } from "../config.js";
 
 export const sequelize = new Sequelize(config.databaseUrl, {
   dialect: "postgres",
@@ -475,21 +358,22 @@ export const sequelize = new Sequelize(config.databaseUrl, {
 
 - [ ] **Step 2: Write the failing test**
 
-`apps/api/tests/user-model.test.ts`:
-```ts
+`apps/api/tests/user-model.test.js`:
+```js
 import { describe, it, expect, beforeAll } from "vitest";
-import { sequelize } from "../src/lib/db";
-import { UserModel } from "../src/modules/users/users.model";
+import { sequelize } from "../src/lib/db.js";
+import { UserModel } from "../src/modules/users/users.model.js";
 
 describe("UserModel", () => {
   beforeAll(async () => {
     await sequelize.sync({ force: true });
   });
-  it("creates a coach user", async () => {
+  it("creates a coach user with defaults", async () => {
     const u = await UserModel.create({
-      role: "coach", email: "c@b.com", passwordHash: "x", name: "Coach", locale: "es",
+      role: "coach", email: "c@b.com", passwordHash: "x", name: "Coach",
     });
     expect(u.id).toBeTruthy();
+    expect(u.locale).toBe("es");
     expect(u.active).toBe(true);
   });
 });
@@ -498,23 +382,15 @@ describe("UserModel", () => {
 - [ ] **Step 3: Run to verify failure**
 
 Run: `npm test -w @blaze/api -- user-model`
-Expected: FAIL ("Cannot find module ...users.model").
+Expected: FAIL ("Cannot find module ...users.model.js").
 
-- [ ] **Step 4: Create `apps/api/src/modules/users/users.model.ts`**
+- [ ] **Step 4: Create `apps/api/src/modules/users/users.model.js`**
 
-```ts
-import { DataTypes, Model, type InferAttributes, type InferCreationAttributes, type CreationOptional } from "sequelize";
-import { sequelize } from "../../lib/db";
+```js
+import { DataTypes, Model } from "sequelize";
+import { sequelize } from "../../lib/db.js";
 
-export class UserModel extends Model<InferAttributes<UserModel>, InferCreationAttributes<UserModel>> {
-  declare id: CreationOptional<string>;
-  declare role: "client" | "coach";
-  declare email: string;
-  declare passwordHash: string;
-  declare name: string;
-  declare locale: CreationOptional<"es" | "en">;
-  declare active: CreationOptional<boolean>;
-}
+export class UserModel extends Model {}
 
 UserModel.init(
   {
@@ -533,7 +409,7 @@ UserModel.init(
 - [ ] **Step 5: Run test and commit**
 
 Run: `npm test -w @blaze/api -- user-model`
-Expected: PASS (requires a running PostgreSQL at `DATABASE_URL`).
+Expected: PASS (requires PostgreSQL running at `DATABASE_URL`; one is available locally).
 
 ```bash
 git add -A
@@ -545,19 +421,19 @@ git commit -m "feat(api): sequelize db layer and user model"
 ### Task 5: Password + JWT libs
 
 **Files:**
-- Create: `apps/api/src/lib/password.ts`, `apps/api/src/lib/jwt.ts`
-- Test: `apps/api/tests/auth-lib.test.ts`
+- Create: `apps/api/src/lib/password.js`, `apps/api/src/lib/jwt.js`
+- Test: `apps/api/tests/auth-lib.test.js`
 
 **Interfaces:**
-- Produces: `hashPassword(pw): Promise<string>`, `verifyPassword(pw, hash): Promise<boolean>`; `signAccess(payload)`, `signRefresh(payload)`, `verifyAccess(token): TokenPayload`, where `TokenPayload = { sub: string; role: Role }`.
+- Produces: `hashPassword(pw) -> Promise<string>`, `verifyPassword(pw, hash) -> Promise<boolean>`; `signAccess(payload)`, `signRefresh(payload)`, `verifyAccess(token)`, `verifyRefresh(token)`. Payload shape: `{ sub, role }`.
 
 - [ ] **Step 1: Write the failing test**
 
-`apps/api/tests/auth-lib.test.ts`:
-```ts
+`apps/api/tests/auth-lib.test.js`:
+```js
 import { describe, it, expect } from "vitest";
-import { hashPassword, verifyPassword } from "../src/lib/password";
-import { signAccess, verifyAccess } from "../src/lib/jwt";
+import { hashPassword, verifyPassword } from "../src/lib/password.js";
+import { signAccess, verifyAccess } from "../src/lib/jwt.js";
 
 describe("password lib", () => {
   it("hashes and verifies", async () => {
@@ -578,34 +454,27 @@ describe("jwt lib", () => {
 - [ ] **Step 2: Run to verify failure**
 
 Run: `npm test -w @blaze/api -- auth-lib`
-Expected: FAIL ("Cannot find module ../src/lib/password").
+Expected: FAIL ("Cannot find module ../src/lib/password.js").
 
-- [ ] **Step 3: Create `apps/api/src/lib/password.ts`**
+- [ ] **Step 3: Create `apps/api/src/lib/password.js`**
 
-```ts
+```js
 import bcrypt from "bcryptjs";
 
-export const hashPassword = (pw: string) => bcrypt.hash(pw, 10);
-export const verifyPassword = (pw: string, hash: string) => bcrypt.compare(pw, hash);
+export const hashPassword = (pw) => bcrypt.hash(pw, 10);
+export const verifyPassword = (pw, hash) => bcrypt.compare(pw, hash);
 ```
 
-- [ ] **Step 4: Create `apps/api/src/lib/jwt.ts`**
+- [ ] **Step 4: Create `apps/api/src/lib/jwt.js`**
 
-```ts
+```js
 import jwt from "jsonwebtoken";
-import type { Role } from "@blaze/shared";
-import { config } from "../config";
+import { config } from "../config.js";
 
-export interface TokenPayload { sub: string; role: Role; }
-
-export const signAccess = (p: TokenPayload) =>
-  jwt.sign(p, config.jwtAccessSecret, { expiresIn: "15m" });
-export const signRefresh = (p: TokenPayload) =>
-  jwt.sign(p, config.jwtRefreshSecret, { expiresIn: "30d" });
-export const verifyAccess = (token: string): TokenPayload =>
-  jwt.verify(token, config.jwtAccessSecret) as TokenPayload;
-export const verifyRefresh = (token: string): TokenPayload =>
-  jwt.verify(token, config.jwtRefreshSecret) as TokenPayload;
+export const signAccess = (p) => jwt.sign(p, config.jwtAccessSecret, { expiresIn: "15m" });
+export const signRefresh = (p) => jwt.sign(p, config.jwtRefreshSecret, { expiresIn: "30d" });
+export const verifyAccess = (token) => jwt.verify(token, config.jwtAccessSecret);
+export const verifyRefresh = (token) => jwt.verify(token, config.jwtRefreshSecret);
 ```
 
 - [ ] **Step 5: Run test and commit**
@@ -620,31 +489,31 @@ git commit -m "feat(api): password hashing and jwt helpers"
 
 ---
 
-### Task 6: Auth middleware (authGuard + roleGuard)
+### Task 6: Auth + validation middleware
 
 **Files:**
-- Create: `apps/api/src/middleware/auth.ts`, `apps/api/src/middleware/validate.ts`
-- Test: `apps/api/tests/auth-middleware.test.ts`
+- Create: `apps/api/src/middleware/auth.js`, `apps/api/src/middleware/validate.js`
+- Test: `apps/api/tests/auth-middleware.test.js`
 
 **Interfaces:**
 - Consumes: `verifyAccess`, `HttpError`.
-- Produces: `authGuard` (sets `req.user = { sub, role }`), `roleGuard(role)`, `validate(schema)`. Augments Express `Request` with `user?: TokenPayload`.
+- Produces: `authGuard` (sets `req.user = { sub, role }` from the bearer token), `roleGuard(role)`, `validate(schema)` (parses+replaces `req.body`).
 
 - [ ] **Step 1: Write the failing test**
 
-`apps/api/tests/auth-middleware.test.ts`:
-```ts
+`apps/api/tests/auth-middleware.test.js`:
+```js
 import { describe, it, expect } from "vitest";
 import express from "express";
 import request from "supertest";
-import { authGuard, roleGuard } from "../src/middleware/auth";
-import { errorHandler } from "../src/middleware/error";
-import { signAccess } from "../src/lib/jwt";
+import { authGuard, roleGuard } from "../src/middleware/auth.js";
+import { errorHandler } from "../src/middleware/error.js";
+import { signAccess } from "../src/lib/jwt.js";
 
 function appWith() {
   const app = express();
   app.get("/coach-only", authGuard, roleGuard("coach"), (req, res) =>
-    res.json({ sub: req.user!.sub }));
+    res.json({ sub: req.user.sub }));
   app.use(errorHandler);
   return app;
 }
@@ -669,26 +538,17 @@ describe("auth middleware", () => {
 - [ ] **Step 2: Run to verify failure**
 
 Run: `npm test -w @blaze/api -- auth-middleware`
-Expected: FAIL ("Cannot find module ../src/middleware/auth").
+Expected: FAIL ("Cannot find module ../src/middleware/auth.js").
 
-- [ ] **Step 3: Create `apps/api/src/middleware/auth.ts`**
+- [ ] **Step 3: Create `apps/api/src/middleware/auth.js`**
 
-```ts
-import type { Request, Response, NextFunction } from "express";
-import type { Role } from "@blaze/shared";
-import { verifyAccess, type TokenPayload } from "../lib/jwt";
-import { HttpError } from "./error";
+```js
+import { verifyAccess } from "../lib/jwt.js";
+import { HttpError } from "./error.js";
 
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace Express {
-    interface Request { user?: TokenPayload; }
-  }
-}
-
-export function authGuard(req: Request, _res: Response, next: NextFunction) {
+export function authGuard(req, _res, next) {
   const header = req.headers.authorization;
-  if (!header?.startsWith("Bearer ")) return next(new HttpError(401, "Unauthorized"));
+  if (!header || !header.startsWith("Bearer ")) return next(new HttpError(401, "Unauthorized"));
   try {
     req.user = verifyAccess(header.slice(7));
     next();
@@ -697,19 +557,16 @@ export function authGuard(req: Request, _res: Response, next: NextFunction) {
   }
 }
 
-export const roleGuard = (role: Role) => (req: Request, _res: Response, next: NextFunction) => {
-  if (req.user?.role !== role) return next(new HttpError(403, "Forbidden"));
+export const roleGuard = (role) => (req, _res, next) => {
+  if (!req.user || req.user.role !== role) return next(new HttpError(403, "Forbidden"));
   next();
 };
 ```
 
-- [ ] **Step 4: Create `apps/api/src/middleware/validate.ts`**
+- [ ] **Step 4: Create `apps/api/src/middleware/validate.js`**
 
-```ts
-import type { Request, Response, NextFunction } from "express";
-import type { ZodSchema } from "zod";
-
-export const validate = (schema: ZodSchema) => (req: Request, _res: Response, next: NextFunction) => {
+```js
+export const validate = (schema) => (req, _res, next) => {
   try {
     req.body = schema.parse(req.body);
     next();
@@ -731,33 +588,33 @@ git commit -m "feat(api): auth + role guards and zod validation middleware"
 
 ---
 
-### Task 7: Auth service + login/refresh routes
+### Task 7: Auth service + login route
 
 **Files:**
-- Create: `apps/api/src/modules/auth/auth.schema.ts`, `auth.service.ts`, `auth.controller.ts`, `auth.route.ts`
-- Modify: `apps/api/src/app.ts` (mount `/api/auth`)
-- Test: `apps/api/tests/auth-login.test.ts`
+- Create: `apps/api/src/modules/auth/auth.schema.js`, `auth.service.js`, `auth.controller.js`, `auth.route.js`
+- Modify: `apps/api/src/app.js` (mount `/api/auth`)
+- Test: `apps/api/tests/auth-login.test.js`
 
 **Interfaces:**
-- Consumes: `UserModel`, `verifyPassword`, `signAccess`, `signRefresh`, `loginSchema`.
-- Produces: `authService.login(email, password): Promise<AuthResponse>`; routes `POST /api/auth/login`, `POST /api/auth/refresh`.
+- Consumes: `UserModel`, `verifyPassword`, `signAccess`, `signRefresh`, `loginSchema`, `HttpError`.
+- Produces: `authService.login(email, password) -> { accessToken, refreshToken, user }`; `authService.toUser(model) -> { id, role, email, name, locale, active }`; route `POST /api/auth/login`.
 
 - [ ] **Step 1: Write the failing test**
 
-`apps/api/tests/auth-login.test.ts`:
-```ts
+`apps/api/tests/auth-login.test.js`:
+```js
 import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
-import { createApp } from "../src/app";
-import { sequelize } from "../src/lib/db";
-import { UserModel } from "../src/modules/users/users.model";
-import { hashPassword } from "../src/lib/password";
+import { createApp } from "../src/app.js";
+import { sequelize } from "../src/lib/db.js";
+import { UserModel } from "../src/modules/users/users.model.js";
+import { hashPassword } from "../src/lib/password.js";
 
 describe("POST /api/auth/login", () => {
   beforeAll(async () => {
     await sequelize.sync({ force: true });
     await UserModel.create({
-      role: "coach", email: "c@b.com", name: "Coach", locale: "es",
+      role: "coach", email: "c@b.com", name: "Coach",
       passwordHash: await hashPassword("secret12"),
     });
   });
@@ -781,27 +638,26 @@ describe("POST /api/auth/login", () => {
 Run: `npm test -w @blaze/api -- auth-login`
 Expected: FAIL (route not mounted → 404).
 
-- [ ] **Step 3: Create `auth.schema.ts`**
+- [ ] **Step 3: Create `auth.schema.js`**
 
-```ts
-export { loginSchema, type LoginInput } from "@blaze/shared";
+```js
+export { loginSchema } from "@blaze/shared";
 ```
 
-- [ ] **Step 4: Create `auth.service.ts`**
+- [ ] **Step 4: Create `auth.service.js`**
 
-```ts
-import type { AuthResponse, User } from "@blaze/shared";
-import { UserModel } from "../users/users.model";
-import { verifyPassword } from "../../lib/password";
-import { signAccess, signRefresh } from "../../lib/jwt";
-import { HttpError } from "../../middleware/error";
+```js
+import { UserModel } from "../users/users.model.js";
+import { verifyPassword } from "../../lib/password.js";
+import { signAccess, signRefresh } from "../../lib/jwt.js";
+import { HttpError } from "../../middleware/error.js";
 
-function toUser(m: UserModel): User {
+function toUser(m) {
   return { id: m.id, role: m.role, email: m.email, name: m.name, locale: m.locale, active: m.active };
 }
 
 export const authService = {
-  async login(email: string, password: string): Promise<AuthResponse> {
+  async login(email, password) {
     const user = await UserModel.findOne({ where: { email } });
     if (!user || !user.active || !(await verifyPassword(password, user.passwordHash))) {
       throw new HttpError(401, "Invalid credentials");
@@ -813,14 +669,13 @@ export const authService = {
 };
 ```
 
-- [ ] **Step 5: Create `auth.controller.ts`**
+- [ ] **Step 5: Create `auth.controller.js`**
 
-```ts
-import type { Request, Response, NextFunction } from "express";
-import { authService } from "./auth.service";
+```js
+import { authService } from "./auth.service.js";
 
 export const authController = {
-  async login(req: Request, res: Response, next: NextFunction) {
+  async login(req, res, next) {
     try {
       res.json(await authService.login(req.body.email, req.body.password));
     } catch (err) { next(err); }
@@ -828,26 +683,27 @@ export const authController = {
 };
 ```
 
-- [ ] **Step 6: Create `auth.route.ts`**
+- [ ] **Step 6: Create `auth.route.js`**
 
-```ts
+```js
 import { Router } from "express";
-import { validate } from "../../middleware/validate";
-import { loginSchema } from "./auth.schema";
-import { authController } from "./auth.controller";
+import { validate } from "../../middleware/validate.js";
+import { loginSchema } from "./auth.schema.js";
+import { authController } from "./auth.controller.js";
 
 export const authRouter = Router();
 authRouter.post("/login", validate(loginSchema), authController.login);
 ```
 
-- [ ] **Step 7: Mount in `app.ts`**
+- [ ] **Step 7: Mount in `app.js`**
 
-Add after `express.json()` middleware in `createApp()`:
-```ts
-import { authRouter } from "./modules/auth/auth.route";
+Add the import at the top and mount after `express.json()` in `createApp()`:
+```js
+import { authRouter } from "./modules/auth/auth.route.js";
 // ...
 app.use("/api/auth", authRouter);
 ```
+(Keep the `errorHandler` as the LAST `app.use` call.)
 
 - [ ] **Step 8: Run test and commit**
 
@@ -864,21 +720,21 @@ git commit -m "feat(api): auth module with login route"
 ### Task 8: Coach seeder
 
 **Files:**
-- Create: `apps/api/src/db/seed.ts`
-- Test: `apps/api/tests/seed.test.ts`
+- Create: `apps/api/src/db/seed.js`
+- Test: `apps/api/tests/seed.test.js`
 
 **Interfaces:**
-- Consumes: `UserModel`, `hashPassword`, `config.seedCoach`.
-- Produces: `seedCoach(): Promise<UserModel>` — idempotent (no duplicate coach).
+- Consumes: `UserModel`, `hashPassword`, `config.seedCoach`, `sequelize`.
+- Produces: `seedCoach() -> Promise<UserModel>` — idempotent (no duplicate coach). Running the file directly seeds then closes the connection.
 
 - [ ] **Step 1: Write the failing test**
 
-`apps/api/tests/seed.test.ts`:
-```ts
+`apps/api/tests/seed.test.js`:
+```js
 import { describe, it, expect, beforeAll } from "vitest";
-import { sequelize } from "../src/lib/db";
-import { UserModel } from "../src/modules/users/users.model";
-import { seedCoach } from "../src/db/seed";
+import { sequelize } from "../src/lib/db.js";
+import { UserModel } from "../src/modules/users/users.model.js";
+import { seedCoach } from "../src/db/seed.js";
 
 describe("seedCoach", () => {
   beforeAll(async () => { await sequelize.sync({ force: true }); });
@@ -894,17 +750,17 @@ describe("seedCoach", () => {
 - [ ] **Step 2: Run to verify failure**
 
 Run: `npm test -w @blaze/api -- seed`
-Expected: FAIL ("Cannot find module ../src/db/seed").
+Expected: FAIL ("Cannot find module ../src/db/seed.js").
 
-- [ ] **Step 3: Create `apps/api/src/db/seed.ts`**
+- [ ] **Step 3: Create `apps/api/src/db/seed.js`**
 
-```ts
-import { sequelize } from "../lib/db";
-import { UserModel } from "../modules/users/users.model";
-import { hashPassword } from "../lib/password";
-import { config } from "../config";
+```js
+import { sequelize } from "../lib/db.js";
+import { UserModel } from "../modules/users/users.model.js";
+import { hashPassword } from "../lib/password.js";
+import { config } from "../config.js";
 
-export async function seedCoach(): Promise<UserModel> {
+export async function seedCoach() {
   const existing = await UserModel.findOne({ where: { email: config.seedCoach.email } });
   if (existing) return existing;
   return UserModel.create({
@@ -917,7 +773,7 @@ export async function seedCoach(): Promise<UserModel> {
 }
 
 // Allow running directly: `npm run seed`
-if (process.argv[1]?.endsWith("seed.ts")) {
+if (process.argv[1] && process.argv[1].endsWith("seed.js")) {
   seedCoach().then(() => sequelize.close()).then(() => console.log("Coach seeded"));
 }
 ```
@@ -937,30 +793,30 @@ git commit -m "feat(api): idempotent coach seeder"
 ### Task 9: Invitations module (create + accept)
 
 **Files:**
-- Create: `apps/api/src/modules/invitations/invitations.model.ts`, `invitations.schema.ts`, `invitations.service.ts`, `invitations.controller.ts`, `invitations.route.ts`, `apps/api/src/modules/coaching/coachClients.model.ts`
-- Modify: `apps/api/src/app.ts`
-- Test: `apps/api/tests/invitations.test.ts`
+- Create: `apps/api/src/modules/invitations/invitations.model.js`, `invitations.schema.js`, `invitations.service.js`, `invitations.controller.js`, `invitations.route.js`, `apps/api/src/modules/coaching/coachClients.model.js`
+- Modify: `apps/api/src/app.js`
+- Test: `apps/api/tests/invitations.test.js`
 
 **Interfaces:**
-- Consumes: `UserModel`, `hashPassword`, `acceptInviteSchema`, `authGuard`, `roleGuard`.
-- Produces: `InvitationModel` (`id, coachId, email, token, status, expiresAt`); `CoachClientModel` (`id, coachId, clientId`); `invitationsService.create(coachId, email)`, `invitationsService.accept(token, name, password)`; routes `POST /api/coach/invitations` (coach), `GET /api/auth/invitations/:token`, `POST /api/auth/invitations/:token/accept`.
+- Consumes: `UserModel`, `hashPassword`, `acceptInviteSchema`, `authGuard`, `roleGuard`, `signAccess`, `signRefresh`, `authService.toUser`, `HttpError`.
+- Produces: `InvitationModel` (`id, coachId, email, token, status, expiresAt`); `CoachClientModel` (`id, coachId, clientId`); `invitationsService.create(coachId, email)`, `invitationsService.preview(token)`, `invitationsService.accept(token, name, password)`; routers `coachInvitationsRouter` (mounted at `/api/coach`) and `inviteAcceptRouter` (mounted at `/api/auth`).
 
 - [ ] **Step 1: Write the failing test**
 
-`apps/api/tests/invitations.test.ts`:
-```ts
+`apps/api/tests/invitations.test.js`:
+```js
 import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
-import { createApp } from "../src/app";
-import { sequelize } from "../src/lib/db";
-import { seedCoach } from "../src/db/seed";
-import { signAccess } from "../src/lib/jwt";
-import { UserModel } from "../src/modules/users/users.model";
-import { CoachClientModel } from "../src/modules/coaching/coachClients.model";
+import { createApp } from "../src/app.js";
+import { sequelize } from "../src/lib/db.js";
+import { seedCoach } from "../src/db/seed.js";
+import { signAccess } from "../src/lib/jwt.js";
+import { UserModel } from "../src/modules/users/users.model.js";
+import { CoachClientModel } from "../src/modules/coaching/coachClients.model.js";
 
 describe("invitations flow", () => {
-  let coachToken: string;
-  let coachId: string;
+  let coachToken;
+  let coachId;
   beforeAll(async () => {
     await sequelize.sync({ force: true });
     const coach = await seedCoach();
@@ -973,7 +829,7 @@ describe("invitations flow", () => {
     const inv = await request(app).post("/api/coach/invitations")
       .set("Authorization", `Bearer ${coachToken}`).send({ email: "client@x.com" });
     expect(inv.status).toBe(201);
-    const token = inv.body.token as string;
+    const token = inv.body.token;
 
     const preview = await request(app).get(`/api/auth/invitations/${token}`);
     expect(preview.body.email).toBe("client@x.com");
@@ -984,8 +840,8 @@ describe("invitations flow", () => {
     expect(accepted.body.user.role).toBe("client");
 
     const client = await UserModel.findOne({ where: { email: "client@x.com" } });
-    const link = await CoachClientModel.findOne({ where: { clientId: client!.id } });
-    expect(link!.coachId).toBe(coachId);
+    const link = await CoachClientModel.findOne({ where: { clientId: client.id } });
+    expect(link.coachId).toBe(coachId);
   });
 
   it("rejects accepting an already-accepted invitation", async () => {
@@ -1005,17 +861,13 @@ describe("invitations flow", () => {
 Run: `npm test -w @blaze/api -- invitations`
 Expected: FAIL (modules/routes missing).
 
-- [ ] **Step 3: Create `coaching/coachClients.model.ts`**
+- [ ] **Step 3: Create `coaching/coachClients.model.js`**
 
-```ts
-import { DataTypes, Model, type InferAttributes, type InferCreationAttributes, type CreationOptional } from "sequelize";
-import { sequelize } from "../../lib/db";
+```js
+import { DataTypes, Model } from "sequelize";
+import { sequelize } from "../../lib/db.js";
 
-export class CoachClientModel extends Model<InferAttributes<CoachClientModel>, InferCreationAttributes<CoachClientModel>> {
-  declare id: CreationOptional<string>;
-  declare coachId: string;
-  declare clientId: string;
-}
+export class CoachClientModel extends Model {}
 
 CoachClientModel.init(
   {
@@ -1023,25 +875,20 @@ CoachClientModel.init(
     coachId: { type: DataTypes.UUID, allowNull: false },
     clientId: { type: DataTypes.UUID, allowNull: false },
   },
-  { sequelize, tableName: "coach_clients", underscored: true,
-    indexes: [{ unique: true, fields: ["coach_id", "client_id"] }] },
+  {
+    sequelize, tableName: "coach_clients", underscored: true,
+    indexes: [{ unique: true, fields: ["coach_id", "client_id"] }],
+  },
 );
 ```
 
-- [ ] **Step 4: Create `invitations/invitations.model.ts`**
+- [ ] **Step 4: Create `invitations/invitations.model.js`**
 
-```ts
-import { DataTypes, Model, type InferAttributes, type InferCreationAttributes, type CreationOptional } from "sequelize";
-import { sequelize } from "../../lib/db";
+```js
+import { DataTypes, Model } from "sequelize";
+import { sequelize } from "../../lib/db.js";
 
-export class InvitationModel extends Model<InferAttributes<InvitationModel>, InferCreationAttributes<InvitationModel>> {
-  declare id: CreationOptional<string>;
-  declare coachId: string;
-  declare email: string;
-  declare token: string;
-  declare status: CreationOptional<"pending" | "accepted" | "expired">;
-  declare expiresAt: Date;
-}
+export class InvitationModel extends Model {}
 
 InvitationModel.init(
   {
@@ -1056,31 +903,30 @@ InvitationModel.init(
 );
 ```
 
-- [ ] **Step 5: Create `invitations/invitations.schema.ts`**
+- [ ] **Step 5: Create `invitations/invitations.schema.js`**
 
-```ts
+```js
 import { z } from "zod";
 export { acceptInviteSchema } from "@blaze/shared";
 export const createInviteSchema = z.object({ email: z.string().email() });
 ```
 
-- [ ] **Step 6: Create `invitations/invitations.service.ts`**
+- [ ] **Step 6: Create `invitations/invitations.service.js`**
 
-```ts
+```js
 import { randomBytes } from "node:crypto";
-import type { AuthResponse } from "@blaze/shared";
-import { InvitationModel } from "./invitations.model";
-import { UserModel } from "../users/users.model";
-import { CoachClientModel } from "../coaching/coachClients.model";
-import { hashPassword } from "../../lib/password";
-import { signAccess, signRefresh } from "../../lib/jwt";
-import { authService } from "../auth/auth.service";
-import { HttpError } from "../../middleware/error";
+import { InvitationModel } from "./invitations.model.js";
+import { UserModel } from "../users/users.model.js";
+import { CoachClientModel } from "../coaching/coachClients.model.js";
+import { hashPassword } from "../../lib/password.js";
+import { signAccess, signRefresh } from "../../lib/jwt.js";
+import { authService } from "../auth/auth.service.js";
+import { HttpError } from "../../middleware/error.js";
 
 const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
 
 export const invitationsService = {
-  async create(coachId: string, email: string): Promise<InvitationModel> {
+  async create(coachId, email) {
     return InvitationModel.create({
       coachId, email,
       token: randomBytes(24).toString("hex"),
@@ -1088,14 +934,14 @@ export const invitationsService = {
     });
   },
 
-  async preview(token: string) {
+  async preview(token) {
     const inv = await InvitationModel.findOne({ where: { token } });
     if (!inv || inv.status !== "pending") throw new HttpError(404, "Invitation not found");
     const coach = await UserModel.findByPk(inv.coachId);
-    return { email: inv.email, coachName: coach?.name ?? "" };
+    return { email: inv.email, coachName: coach ? coach.name : "" };
   },
 
-  async accept(token: string, name: string, password: string): Promise<AuthResponse> {
+  async accept(token, name, password) {
     const inv = await InvitationModel.findOne({ where: { token } });
     if (!inv || inv.status !== "pending" || inv.expiresAt < new Date()) {
       throw new HttpError(400, "Invitation is not valid");
@@ -1113,24 +959,23 @@ export const invitationsService = {
 };
 ```
 
-- [ ] **Step 7: Create `invitations/invitations.controller.ts`**
+- [ ] **Step 7: Create `invitations/invitations.controller.js`**
 
-```ts
-import type { Request, Response, NextFunction } from "express";
-import { invitationsService } from "./invitations.service";
+```js
+import { invitationsService } from "./invitations.service.js";
 
 export const invitationsController = {
-  async create(req: Request, res: Response, next: NextFunction) {
+  async create(req, res, next) {
     try {
-      const inv = await invitationsService.create(req.user!.sub, req.body.email);
+      const inv = await invitationsService.create(req.user.sub, req.body.email);
       res.status(201).json({ id: inv.id, token: inv.token, email: inv.email });
     } catch (err) { next(err); }
   },
-  async preview(req: Request, res: Response, next: NextFunction) {
+  async preview(req, res, next) {
     try { res.json(await invitationsService.preview(req.params.token)); }
     catch (err) { next(err); }
   },
-  async accept(req: Request, res: Response, next: NextFunction) {
+  async accept(req, res, next) {
     try {
       res.status(201).json(await invitationsService.accept(req.params.token, req.body.name, req.body.password));
     } catch (err) { next(err); }
@@ -1138,14 +983,14 @@ export const invitationsController = {
 };
 ```
 
-- [ ] **Step 8: Create `invitations/invitations.route.ts`**
+- [ ] **Step 8: Create `invitations/invitations.route.js`**
 
-```ts
+```js
 import { Router } from "express";
-import { authGuard, roleGuard } from "../../middleware/auth";
-import { validate } from "../../middleware/validate";
-import { acceptInviteSchema, createInviteSchema } from "./invitations.schema";
-import { invitationsController } from "./invitations.controller";
+import { authGuard, roleGuard } from "../../middleware/auth.js";
+import { validate } from "../../middleware/validate.js";
+import { acceptInviteSchema, createInviteSchema } from "./invitations.schema.js";
+import { invitationsController } from "./invitations.controller.js";
 
 // Coach-scoped router → mounted at /api/coach
 export const coachInvitationsRouter = Router();
@@ -1159,10 +1004,11 @@ inviteAcceptRouter.post("/invitations/:token/accept",
   validate(acceptInviteSchema), invitationsController.accept);
 ```
 
-- [ ] **Step 9: Mount routers in `app.ts`**
+- [ ] **Step 9: Mount routers in `app.js`**
 
-```ts
-import { coachInvitationsRouter, inviteAcceptRouter } from "./modules/invitations/invitations.route";
+Add imports at top and mount (keep `errorHandler` last):
+```js
+import { coachInvitationsRouter, inviteAcceptRouter } from "./modules/invitations/invitations.route.js";
 // inside createApp(), after authRouter:
 app.use("/api/auth", inviteAcceptRouter);
 app.use("/api/coach", coachInvitationsRouter);
@@ -1183,20 +1029,20 @@ git commit -m "feat(api): invitation create + accept onboarding flow"
 ### Task 10: R2 + sharp storage helper
 
 **Files:**
-- Create: `apps/api/src/lib/storage.ts`
-- Test: `apps/api/tests/storage.test.ts`
+- Create: `apps/api/src/lib/storage.js`
+- Test: `apps/api/tests/storage.test.js`
 
 **Interfaces:**
 - Consumes: `config.r2`.
-- Produces: `makeThumbnail(buffer): Promise<Buffer>`; `putObject(key, body, contentType): Promise<void>`; `getObject(key): Promise<{ body: Readable; contentType?: string }>`; `deleteObject(key): Promise<void>`; `buildKey(prefix, ext): string`. R2 client is created lazily so tests can exercise `makeThumbnail`/`buildKey` without network.
+- Produces: `makeThumbnail(buffer) -> Promise<Buffer>`; `putObject(key, body, contentType)`; `getObject(key) -> { body, contentType }`; `deleteObject(key)`; `buildKey(prefix, ext) -> string`. The R2 client is created lazily so `makeThumbnail`/`buildKey` work in tests without network/credentials.
 
 - [ ] **Step 1: Write the failing test**
 
-`apps/api/tests/storage.test.ts`:
-```ts
+`apps/api/tests/storage.test.js`:
+```js
 import { describe, it, expect } from "vitest";
 import sharp from "sharp";
-import { makeThumbnail, buildKey } from "../src/lib/storage";
+import { makeThumbnail, buildKey } from "../src/lib/storage.js";
 
 describe("storage helper", () => {
   it("buildKey returns a unique prefixed key", () => {
@@ -1219,19 +1065,18 @@ describe("storage helper", () => {
 - [ ] **Step 2: Run to verify failure**
 
 Run: `npm test -w @blaze/api -- storage`
-Expected: FAIL ("Cannot find module ../src/lib/storage").
+Expected: FAIL ("Cannot find module ../src/lib/storage.js").
 
-- [ ] **Step 3: Create `apps/api/src/lib/storage.ts`**
+- [ ] **Step 3: Create `apps/api/src/lib/storage.js`**
 
-```ts
+```js
 import { randomUUID } from "node:crypto";
-import type { Readable } from "node:stream";
 import sharp from "sharp";
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { config } from "../config";
+import { config } from "../config.js";
 
-let client: S3Client | null = null;
-function r2(): S3Client {
+let client = null;
+function r2() {
   if (!client) {
     client = new S3Client({
       region: "auto",
@@ -1242,21 +1087,21 @@ function r2(): S3Client {
   return client;
 }
 
-export const buildKey = (prefix: string, ext: string) => `${prefix}/${randomUUID()}.${ext}`;
+export const buildKey = (prefix, ext) => `${prefix}/${randomUUID()}.${ext}`;
 
-export const makeThumbnail = (buffer: Buffer) =>
+export const makeThumbnail = (buffer) =>
   sharp(buffer).resize(320, 320, { fit: "inside", withoutEnlargement: true }).jpeg({ quality: 70 }).toBuffer();
 
-export async function putObject(key: string, body: Buffer, contentType: string): Promise<void> {
+export async function putObject(key, body, contentType) {
   await r2().send(new PutObjectCommand({ Bucket: config.r2.bucket, Key: key, Body: body, ContentType: contentType }));
 }
 
-export async function getObject(key: string): Promise<{ body: Readable; contentType?: string }> {
+export async function getObject(key) {
   const out = await r2().send(new GetObjectCommand({ Bucket: config.r2.bucket, Key: key }));
-  return { body: out.Body as Readable, contentType: out.ContentType };
+  return { body: out.Body, contentType: out.ContentType };
 }
 
-export async function deleteObject(key: string): Promise<void> {
+export async function deleteObject(key) {
   await r2().send(new DeleteObjectCommand({ Bucket: config.r2.bucket, Key: key }));
 }
 ```
@@ -1276,11 +1121,11 @@ git commit -m "feat(api): R2 storage helper with sharp thumbnails"
 ### Task 11: Frontend scaffold (Vite + Tailwind + tokens + fonts)
 
 **Files:**
-- Create: `apps/web/package.json`, `vite.config.ts`, `tailwind.config.js`, `postcss.config.js`, `index.html`, `src/main.tsx`, `src/App.tsx`, `src/styles/tokens.css`
-- Test: `apps/web/src/App.test.tsx`
+- Create: `apps/web/package.json`, `vite.config.js`, `tailwind.config.js`, `postcss.config.js`, `index.html`, `src/main.jsx`, `src/App.jsx`, `src/test-setup.js`, `src/styles/tokens.css`
+- Test: `apps/web/src/App.test.jsx`
 
 **Interfaces:**
-- Produces: a rendering React app exposing design tokens as Tailwind theme colors `primary`, `ink`, `success`, `danger` and fonts `heading`, `body`.
+- Produces: a rendering React app exposing Tailwind theme colors `primary`, `ink`, `success`, `danger` and fonts `heading`, `body`. Vitest configured with jsdom.
 
 - [ ] **Step 1: Create `apps/web/package.json`**
 
@@ -1316,8 +1161,7 @@ git commit -m "feat(api): R2 storage helper with sharp thumbnails"
     "vitest": "^2.0.0",
     "jsdom": "^24.1.0",
     "@testing-library/react": "^16.0.0",
-    "@testing-library/jest-dom": "^6.4.0",
-    "typescript": "^5.5.0"
+    "@testing-library/jest-dom": "^6.4.0"
   }
 }
 ```
@@ -1327,7 +1171,7 @@ git commit -m "feat(api): R2 storage helper with sharp thumbnails"
 ```js
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ["./index.html", "./src/**/*.{ts,tsx}"],
+  content: ["./index.html", "./src/**/*.{js,jsx}"],
   theme: {
     extend: {
       colors: {
@@ -1340,7 +1184,6 @@ export default {
         heading: ['"Barlow Condensed"', "system-ui", "sans-serif"],
         body: ['"Barlow"', "system-ui", "sans-serif"],
       },
-      borderRadius: { none: "0" },
     },
   },
   plugins: [],
@@ -1364,61 +1207,61 @@ export default { plugins: { tailwindcss: {}, autoprefixer: {} } };
 @tailwind components;
 @tailwind utilities;
 
-:root { --color-primary: #FF3C00; }
 body { @apply font-body text-ink bg-white; }
 ```
 
-- [ ] **Step 5: Create `vite.config.ts`**
+- [ ] **Step 5: Create `vite.config.js` and `src/test-setup.js`**
 
-```ts
+`vite.config.js`:
+```js
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
-  test: { environment: "jsdom", globals: true, setupFiles: ["./src/test-setup.ts"] },
+  test: { environment: "jsdom", globals: true, setupFiles: ["./src/test-setup.js"] },
 });
 ```
 
-Also create `src/test-setup.ts`:
-```ts
+`src/test-setup.js`:
+```js
 import "@testing-library/jest-dom";
 ```
 
-- [ ] **Step 6: Create `index.html`, `src/main.tsx`, `src/App.tsx`**
+- [ ] **Step 6: Create `index.html`, `src/main.jsx`, `src/App.jsx`**
 
 `index.html`:
 ```html
 <!doctype html>
 <html lang="es">
   <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Blaze Lifestyle</title></head>
-  <body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>
+  <body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body>
 </html>
 ```
 
-`src/App.tsx`:
-```tsx
+`src/App.jsx`:
+```jsx
 export default function App() {
   return <h1 className="font-heading uppercase tracking-wide text-primary">Blaze Lifestyle</h1>;
 }
 ```
 
-`src/main.tsx`:
-```tsx
+`src/main.jsx`:
+```jsx
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles/tokens.css";
-import App from "./App";
+import App from "./App.jsx";
 
-createRoot(document.getElementById("root")!).render(<StrictMode><App /></StrictMode>);
+createRoot(document.getElementById("root")).render(<StrictMode><App /></StrictMode>);
 ```
 
 - [ ] **Step 7: Write the failing test**
 
-`src/App.test.tsx`:
-```tsx
+`src/App.test.jsx`:
+```jsx
 import { render, screen } from "@testing-library/react";
-import App from "./App";
+import App from "./App.jsx";
 
 it("renders the brand", () => {
   render(<App />);
@@ -1441,12 +1284,12 @@ git commit -m "feat(web): vite + tailwind scaffold with Blaze tokens"
 ### Task 12: i18n (ES/EN) + Button primitive
 
 **Files:**
-- Create: `apps/web/src/lib/i18n.ts`, `apps/web/src/locales/es.json`, `apps/web/src/locales/en.json`, `apps/web/src/components/Button.tsx`
-- Modify: `apps/web/src/main.tsx` (import i18n)
-- Test: `apps/web/src/components/Button.test.tsx`
+- Create: `apps/web/src/lib/i18n.js`, `apps/web/src/locales/es.json`, `apps/web/src/locales/en.json`, `apps/web/src/components/Button.jsx`
+- Modify: `apps/web/src/main.jsx` (import i18n)
+- Test: `apps/web/src/components/Button.test.jsx`
 
 **Interfaces:**
-- Produces: configured `i18n` instance (default `es`, fallback `en`); `<Button variant="primary"|"secondary">` styled with Blaze tokens, applies `active:scale-95`, min height 44px.
+- Produces: configured `i18n` instance (default `es`, fallback `en`); `<Button variant="primary"|"secondary">` styled with Blaze tokens, `active:scale-95`, min height 44px.
 
 - [ ] **Step 1: Create `src/locales/es.json` and `en.json`**
 
@@ -1459,9 +1302,9 @@ git commit -m "feat(web): vite + tailwind scaffold with Blaze tokens"
 { "auth": { "login": "Log in", "email": "Email", "password": "Password" } }
 ```
 
-- [ ] **Step 2: Create `src/lib/i18n.ts`**
+- [ ] **Step 2: Create `src/lib/i18n.js`**
 
-```ts
+```js
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import es from "../locales/es.json";
@@ -1477,14 +1320,14 @@ i18n.use(initReactI18next).init({
 export default i18n;
 ```
 
-Add `import "./lib/i18n";` to `src/main.tsx`.
+Add `import "./lib/i18n.js";` to `src/main.jsx` (after the tokens.css import).
 
 - [ ] **Step 3: Write the failing test**
 
-`src/components/Button.test.tsx`:
-```tsx
+`src/components/Button.test.jsx`:
+```jsx
 import { render, screen } from "@testing-library/react";
-import { Button } from "./Button";
+import { Button } from "./Button.jsx";
 
 it("renders a primary button with min touch height", () => {
   render(<Button variant="primary">GUARDAR</Button>);
@@ -1496,23 +1339,19 @@ it("renders a primary button with min touch height", () => {
 - [ ] **Step 4: Run to verify failure**
 
 Run: `npm test -w @blaze/web -- Button`
-Expected: FAIL ("Cannot find module ./Button").
+Expected: FAIL ("Cannot find module ./Button.jsx").
 
-- [ ] **Step 5: Create `src/components/Button.tsx`**
+- [ ] **Step 5: Create `src/components/Button.jsx`**
 
-```tsx
-import type { ButtonHTMLAttributes } from "react";
-
-type Variant = "primary" | "secondary";
-interface Props extends ButtonHTMLAttributes<HTMLButtonElement> { variant?: Variant; }
-
-const base = "min-h-[44px] px-4 font-heading uppercase tracking-wide border-2 rounded-none transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed motion-reduce:active:scale-100";
-const variants: Record<Variant, string> = {
+```jsx
+const base =
+  "min-h-[44px] px-4 font-heading uppercase tracking-wide border-2 rounded-none transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed motion-reduce:active:scale-100";
+const variants = {
   primary: "bg-primary text-white border-primary",
   secondary: "bg-white text-ink border-ink",
 };
 
-export function Button({ variant = "primary", className = "", ...rest }: Props) {
+export function Button({ variant = "primary", className = "", ...rest }) {
   return <button className={`${base} ${variants[variant]} ${className}`} {...rest} />;
 }
 ```
@@ -1532,22 +1371,22 @@ git commit -m "feat(web): i18n setup and Button primitive"
 ### Task 13: API client + Auth context + role-based router + Login screen
 
 **Files:**
-- Create: `apps/web/src/lib/api.ts`, `apps/web/src/lib/auth.tsx`, `apps/web/src/app/router.tsx`, `apps/web/src/features/auth/LoginScreen.tsx`
-- Modify: `apps/web/src/App.tsx` (render router)
-- Test: `apps/web/src/features/auth/LoginScreen.test.tsx`
+- Create: `apps/web/src/lib/api.js`, `apps/web/src/lib/auth.jsx`, `apps/web/src/app/router.jsx`, `apps/web/src/features/auth/LoginScreen.jsx`
+- Modify: `apps/web/src/App.jsx` (render router)
+- Test: `apps/web/src/features/auth/LoginScreen.test.jsx`
 
 **Interfaces:**
-- Consumes: `AuthResponse`, `User` from `@blaze/shared`; `Button`; `i18n`.
-- Produces: `api.post/get(path, body?)` (attaches bearer token from storage); `AuthProvider` + `useAuth()` returning `{ user, login, logout }`; `router` with role-based trees (`coach` → `/coach/*`, `client` → `/*`) and a public `/login`.
+- Consumes: `Button`, `i18n` (translations under `auth.*`).
+- Produces: `api.get(path)` / `api.post(path, body)` (attaches bearer token from `localStorage`); `AuthProvider` + `useAuth()` returning `{ user, login, logout }`; `router` with a public `/login`, a role redirect at `/`, and placeholder `/home` (client) and `/coach` routes.
 
-- [ ] **Step 1: Create `src/lib/api.ts`**
+- [ ] **Step 1: Create `src/lib/api.js`**
 
-```ts
+```js
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 
 function token() { return localStorage.getItem("accessToken"); }
 
-async function call(method: string, path: string, body?: unknown) {
+async function call(method, path, body) {
   const res = await fetch(`${BASE}/api${path}`, {
     method,
     headers: {
@@ -1556,34 +1395,35 @@ async function call(method: string, path: string, body?: unknown) {
     },
     body: body ? JSON.stringify(body) : undefined,
   });
-  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? res.statusText);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? res.statusText);
+  }
   return res.json();
 }
 
 export const api = {
-  get: (p: string) => call("GET", p),
-  post: (p: string, b?: unknown) => call("POST", p, b),
+  get: (p) => call("GET", p),
+  post: (p, b) => call("POST", p, b),
 };
 ```
 
-- [ ] **Step 2: Create `src/lib/auth.tsx`**
+- [ ] **Step 2: Create `src/lib/auth.jsx`**
 
-```tsx
-import { createContext, useContext, useState, type ReactNode } from "react";
-import type { AuthResponse, User } from "@blaze/shared";
-import { api } from "./api";
+```jsx
+import { createContext, useContext, useState } from "react";
+import { api } from "./api.js";
 
-interface AuthCtx { user: User | null; login: (e: string, p: string) => Promise<User>; logout: () => void; }
-const Ctx = createContext<AuthCtx | null>(null);
+const Ctx = createContext(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(() => {
     const raw = localStorage.getItem("user");
-    return raw ? (JSON.parse(raw) as User) : null;
+    return raw ? JSON.parse(raw) : null;
   });
 
-  async function login(email: string, password: string): Promise<User> {
-    const res = (await api.post("/auth/login", { email, password })) as AuthResponse;
+  async function login(email, password) {
+    const res = await api.post("/auth/login", { email, password });
     localStorage.setItem("accessToken", res.accessToken);
     localStorage.setItem("refreshToken", res.refreshToken);
     localStorage.setItem("user", JSON.stringify(res.user));
@@ -1606,16 +1446,18 @@ export function useAuth() {
 
 - [ ] **Step 3: Write the failing test**
 
-`src/features/auth/LoginScreen.test.tsx`:
-```tsx
+`src/features/auth/LoginScreen.test.jsx`:
+```jsx
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { AuthProvider } from "../../lib/auth";
-import { LoginScreen } from "./LoginScreen";
-import "../../lib/i18n";
+import { AuthProvider } from "../../lib/auth.jsx";
+import { LoginScreen } from "./LoginScreen.jsx";
+import "../../lib/i18n.js";
 
 it("renders email, password fields and a login button", () => {
-  render(<MemoryRouter><AuthProvider><LoginScreen /></AuthProvider></MemoryRouter>);
+  render(
+    <MemoryRouter><AuthProvider><LoginScreen /></AuthProvider></MemoryRouter>
+  );
   expect(screen.getByLabelText(/correo/i)).toBeInTheDocument();
   expect(screen.getByLabelText(/contraseña/i)).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /iniciar sesión/i })).toBeInTheDocument();
@@ -1625,16 +1467,16 @@ it("renders email, password fields and a login button", () => {
 - [ ] **Step 4: Run to verify failure**
 
 Run: `npm test -w @blaze/web -- LoginScreen`
-Expected: FAIL ("Cannot find module ./LoginScreen").
+Expected: FAIL ("Cannot find module ./LoginScreen.jsx").
 
-- [ ] **Step 5: Create `src/features/auth/LoginScreen.tsx`**
+- [ ] **Step 5: Create `src/features/auth/LoginScreen.jsx`**
 
-```tsx
+```jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useAuth } from "../../lib/auth";
-import { Button } from "../../components/Button";
+import { useAuth } from "../../lib/auth.jsx";
+import { Button } from "../../components/Button.jsx";
 
 export function LoginScreen() {
   const { t } = useTranslation();
@@ -1642,14 +1484,14 @@ export function LoginScreen() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null);
 
-  async function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e) {
     e.preventDefault();
     setError(null);
     try {
       const user = await login(email, password);
-      navigate(user.role === "coach" ? "/coach" : "/");
+      navigate(user.role === "coach" ? "/coach" : "/home");
     } catch {
       setError("error");
     }
@@ -1677,12 +1519,12 @@ export function LoginScreen() {
 }
 ```
 
-- [ ] **Step 6: Create `src/app/router.tsx`**
+- [ ] **Step 6: Create `src/app/router.jsx`**
 
-```tsx
+```jsx
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import { useAuth } from "../lib/auth";
-import { LoginScreen } from "../features/auth/LoginScreen";
+import { useAuth } from "../lib/auth.jsx";
+import { LoginScreen } from "../features/auth/LoginScreen.jsx";
 
 function RoleHome() {
   const { user } = useAuth();
@@ -1698,17 +1540,21 @@ export const router = createBrowserRouter([
 ]);
 ```
 
-- [ ] **Step 7: Render router in `App.tsx`**
+- [ ] **Step 7: Render router in `App.jsx`**
 
-```tsx
+```jsx
 import { RouterProvider } from "react-router-dom";
-import { AuthProvider } from "./lib/auth";
-import { router } from "./app/router";
+import { AuthProvider } from "./lib/auth.jsx";
+import { router } from "./app/router.jsx";
 
 export default function App() {
-  return <AuthProvider><RouterProvider router={router} /></AuthProvider>;
+  return (
+    <AuthProvider><RouterProvider router={router} /></AuthProvider>
+  );
 }
 ```
+
+(Update `src/App.test.jsx`: the old "renders the brand" assertion no longer holds once `App` renders the router. Replace it with a render smoke test that wraps in nothing extra — `App` provides its own providers — and asserts the login route is reachable, e.g. render `<App />` and assert `screen.getByRole("button", { name: /iniciar sesión/i })` is present after navigating to `/login`. Keep it minimal.)
 
 - [ ] **Step 8: Run test and commit**
 
@@ -1726,7 +1572,7 @@ git commit -m "feat(web): api client, auth context, role router, login screen"
 
 **Files:**
 - Create: `apps/web/public/manifest.webmanifest`, icon placeholders `apps/web/public/icon-192.png`, `apps/web/public/icon-512.png`
-- Modify: `apps/web/vite.config.ts` (add `vite-plugin-pwa`), `index.html` (manifest link, theme-color)
+- Modify: `apps/web/vite.config.js` (add `vite-plugin-pwa`), `index.html` (manifest link, theme-color)
 
 **Interfaces:**
 - Produces: an installable PWA (build emits a service worker + manifest). No new runtime API.
@@ -1748,9 +1594,9 @@ git commit -m "feat(web): api client, auth context, role router, login screen"
 }
 ```
 
-- [ ] **Step 2: Add PWA plugin to `vite.config.ts`**
+- [ ] **Step 2: Add PWA plugin to `vite.config.js`**
 
-```ts
+```js
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
@@ -1760,7 +1606,7 @@ export default defineConfig({
     react(),
     VitePWA({ registerType: "autoUpdate", manifest: false, includeAssets: ["icon-192.png", "icon-512.png"] }),
   ],
-  test: { environment: "jsdom", globals: true, setupFiles: ["./src/test-setup.ts"] },
+  test: { environment: "jsdom", globals: true, setupFiles: ["./src/test-setup.js"] },
 });
 ```
 
@@ -1774,7 +1620,11 @@ Add inside `<head>`:
 
 - [ ] **Step 4: Add placeholder PNG icons**
 
-Create solid `#FF3C00` PNGs at 192×192 and 512×512 (any image tool, or a one-off `sharp` script). They are replaced with real branding later.
+Create solid `#FF3C00` PNGs at 192×192 and 512×512. Quick one-off using the already-installed `sharp` (run from `apps/web`):
+```bash
+node -e "const s=require('sharp');['192','512'].forEach(n=>s({create:{width:+n,height:+n,channels:3,background:'#FF3C00'}}).png().toFile('public/icon-'+n+'.png'))"
+```
+(They are replaced with real branding later.)
 
 - [ ] **Step 5: Verify build and commit**
 
@@ -1791,7 +1641,8 @@ git commit -m "feat(web): installable PWA manifest and service worker"
 ## Self-Review
 
 **Spec coverage (Foundation phase):**
-- Monorepo `apps/web`, `apps/api`, `packages/shared` → Tasks 1, 3, 11. ✓
+- Monorepo `apps/web`, `apps/api`, `packages/shared` → Tasks 1–3, 11. ✓
+- JavaScript ESM everywhere (no TypeScript) → Global Constraints; all task code is `.js`/`.jsx`. ✓
 - Backend module layering (model/schema/service/controller/route) → Tasks 7, 9 establish the pattern. ✓
 - Sequelize + PostgreSQL → Task 4. ✓
 - Auth (JWT, login, guards) → Tasks 5–7. ✓
@@ -1799,10 +1650,10 @@ git commit -m "feat(web): installable PWA manifest and service worker"
 - Single coach seeded → Task 8. ✓
 - R2 + sharp private photo storage → Task 10. ✓
 - Frontend shell: Tailwind tokens + Barlow fonts → Task 11; i18n ES/EN → Task 12; design-system Button → Task 12; role-based router + auth + login → Task 13; PWA → Task 14. ✓
-- Two-layer authorization (role guard now; ownership checks land with data modules in later plans). ✓ (foundation provides `roleGuard`; ownership enforced per-resource in Nutrition/Coach plans)
+- Two-layer authorization: `roleGuard` provided now; per-resource ownership checks land with the data modules in later plans. ✓
 
-**Out of scope here (next plans):** meal plans, meal entries + photo upload endpoints, client timeline/entry screens, coach panel screens, compliance confirmation, metrics. These build on the interfaces produced above.
+**Out of scope here (next plans):** meal plans, meal entries + photo upload endpoints, client timeline/entry screens, coach panel screens, compliance confirmation, metrics.
 
 **Placeholder scan:** none — every step contains runnable code or an exact command.
 
-**Type consistency:** `TokenPayload = { sub, role }` used consistently across jwt, auth middleware, services. `authService.toUser` reused by invitations service. `AuthResponse`/`User` come from `@blaze/shared` on both ends.
+**Type/name consistency:** token payload `{ sub, role }` used consistently across `jwt.js`, `auth.js` middleware, services. `authService.toUser` reused by invitations service. Auth responses share the `{ accessToken, refreshToken, user }` shape across login and invite-accept. Local ESM imports use explicit `.js`/`.jsx` extensions throughout. Task 1 is already complete; this plan resumes at Task 2.

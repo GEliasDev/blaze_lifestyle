@@ -8,19 +8,22 @@ app for logging meals, plus a responsive coach panel for reviewing clients. Futu
 
 ## Stack
 
-- **Frontend:** React + Vite + TypeScript + Tailwind CSS + React Router + react-i18next. PWA (installable).
-- **Backend:** Node + Express + TypeScript, Sequelize ORM over **PostgreSQL**, Zod validation, JWT auth.
+- **Language:** **JavaScript (ESM)** everywhere — no TypeScript. `"type": "module"`, `import`/`export`,
+  `.js` for Node, `.jsx` for React components. Node ESM imports use explicit file extensions.
+- **Frontend:** React + Vite + Tailwind CSS + React Router + react-i18next. PWA (installable).
+- **Backend:** Node + Express, Sequelize ORM over **PostgreSQL**, Zod validation, JWT auth.
 - **Photos:** Cloudflare R2 (S3-compatible); thumbnails via `sharp`; served through an authenticated proxy.
-- **Monorepo:** workspaces — `apps/web`, `apps/api`, `packages/shared`.
+- **Monorepo:** workspaces — `apps/web`, `apps/api`, `packages/shared`. Shared package exports
+  enums/constants + Zod schemas (runtime validation shared by both apps).
 
 ## Backend conventions
 
 - Organize the API by **modules** under `apps/api/src/modules/<name>/`. Every module follows this layering:
-  - `<name>.model.ts` — Sequelize model (maps to a PostgreSQL table)
-  - `<name>.schema.ts` — Zod schemas (validate request input + response shape)
-  - `<name>.service.ts` — business logic only; **no `req`/`res`** here
-  - `<name>.controller.ts` — request handlers: parse → call service → respond
-  - `<name>.route.ts` — Express router + middleware wiring
+  - `<name>.model.js` — Sequelize model (maps to a PostgreSQL table)
+  - `<name>.schema.js` — Zod schemas (validate request input + response shape)
+  - `<name>.service.js` — business logic only; **no `req`/`res`** here
+  - `<name>.controller.js` — request handlers: parse → call service → respond
+  - `<name>.route.js` — Express router + middleware wiring
 - Controllers stay thin; put logic in services. Services are unit-testable without HTTP.
 - **Authorization is enforced in two places:** route-level role guard (`client`/`coach`) AND
   service-level ownership check (client owns the entry / coach owns the client) on every data access.
