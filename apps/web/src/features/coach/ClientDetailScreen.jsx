@@ -37,7 +37,7 @@ export function ClientDetailScreen() {
       {!entries ? <Spinner /> : (
         <div className="space-y-2">
           {entries.map((e) => (
-            <Link key={e.id} to={`/coach/entries/${e.id}`} className="flex justify-between items-center border-2 border-border p-3 hover:border-primary">
+            <Link key={e.id} to={`/coach/entries/${e.id}?client=${id}`} className="flex justify-between items-center border-2 border-border p-3 hover:border-primary">
               <span className="font-heading uppercase tracking-wide">{t(`category.${e.category}`)} · {new Date(e.eatenAt).toISOString().slice(0, 10)}</span>
               <ComplianceBadge value={e.coachCompliance ?? e.clientCompliance} />
             </Link>
