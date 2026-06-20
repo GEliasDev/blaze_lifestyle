@@ -6,10 +6,12 @@ import { config } from "./config.js";
 // which registers every Sequelize model before we sync.
 const app = createApp();
 
-// NOTE: sync() creates tables if missing. It does NOT safely evolve a populated
-// schema — a proper migration tool (umzug/sequelize-cli) is planned for a later phase.
+// NOTE: sync({ alter: true }) creates tables if missing and adds new columns to
+// the existing dev DB without dropping data. It does NOT safely handle column
+// renames or type changes — a proper migration tool (umzug/sequelize-cli) is
+// planned for production.
 await sequelize.authenticate();
-await sequelize.sync();
+await sequelize.sync({ alter: true });
 
 app.listen(config.port, () => {
   console.log(`API listening on :${config.port}`);

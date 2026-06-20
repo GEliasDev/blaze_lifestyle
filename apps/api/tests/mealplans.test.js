@@ -2,7 +2,6 @@ import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
 import { createApp } from "../src/app.js";
 import { sequelize } from "../src/lib/db.js";
-import { seedCoach } from "../src/db/seed.js";
 import { signAccess } from "../src/lib/jwt.js";
 import { UserModel } from "../src/modules/users/users.model.js";
 import { CoachClientModel } from "../src/modules/coaching/coachClients.model.js";
@@ -13,7 +12,7 @@ let app, coachToken, clientToken, clientId;
 beforeAll(async () => {
   await sequelize.sync({ force: true });
   app = createApp();
-  const coach = await seedCoach();
+  const coach = await UserModel.create({ role: "coach", email: "coach@blaze.com", name: "Coach", passwordHash: await hashPassword("secret12") });
   coachToken = signAccess({ sub: coach.id, role: "coach" });
   const client = await UserModel.create({ role: "client", email: "c1@x.com", name: "C1", passwordHash: await hashPassword("secret12") });
   clientId = client.id;

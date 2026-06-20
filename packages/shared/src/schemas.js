@@ -5,7 +5,3 @@ export const loginSchema = z.object({
   password: z.string().min(8),
 });
 
-export const acceptInviteSchema = z.object({
-  name: z.string().min(1),
-  password: z.string().min(8),
-});

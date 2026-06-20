@@ -3,7 +3,6 @@ import cors from "cors";
 import { config } from "./config.js";
 import { errorHandler } from "./middleware/error.js";
 import { authRouter } from "./modules/auth/auth.route.js";
-import { coachInvitationsRouter, inviteAcceptRouter } from "./modules/invitations/invitations.route.js";
 import { coachPlansRouter, clientPlanRouter } from "./modules/mealplans/mealplans.route.js";
 import { clientEntriesRouter, photosRouter } from "./modules/nutrition/nutrition.route.js";
 import { coachingRouter } from "./modules/coaching/coaching.route.js";
@@ -17,8 +16,6 @@ export function createApp() {
   app.use(express.json());
   app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
   app.use("/api/auth", authRouter);
-  app.use("/api/auth", inviteAcceptRouter);
-  app.use("/api/coach", coachInvitationsRouter);
   app.use("/api/coach", coachPlansRouter);
   app.use("/api/me", clientPlanRouter);
   app.use("/api/me", clientEntriesRouter);

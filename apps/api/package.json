@@ -4,8 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch src/server.js",
-    "test": "vitest run",
-    "seed": "node src/db/seed.js"
+    "test": "vitest run"
   },
   "dependencies": {
     "@blaze/shared": "*",
