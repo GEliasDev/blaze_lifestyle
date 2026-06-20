@@ -1,4 +1,7 @@
-const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
+// Default to the same host the page was served from (port 4000) so the app
+// works both on the PC (localhost) and from a phone on the LAN (PC's IP),
+// without hardcoding an address. Override with VITE_API_URL if needed.
+const BASE = import.meta.env.VITE_API_URL ?? `${window.location.protocol}//${window.location.hostname}:4000`;
 
 function token() { return localStorage.getItem("accessToken"); }
 

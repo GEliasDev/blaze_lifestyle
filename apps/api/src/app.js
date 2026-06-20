@@ -7,7 +7,10 @@ import { coachInvitationsRouter, inviteAcceptRouter } from "./modules/invitation
 
 export function createApp() {
   const app = express();
-  app.use(cors({ origin: config.webOrigin, credentials: true }));
+  // Dev-permissive CORS: reflect the request origin so the app works from
+  // localhost and from a phone on the LAN. Lock this down to config.webOrigin
+  // for production deployments.
+  app.use(cors({ origin: true, credentials: true }));
   app.use(express.json());
   app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
   app.use("/api/auth", authRouter);
