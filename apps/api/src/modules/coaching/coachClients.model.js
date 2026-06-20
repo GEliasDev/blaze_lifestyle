@@ -11,6 +11,9 @@ CoachClientModel.init(
   },
   {
     sequelize, tableName: "coach_clients", underscored: true,
-    indexes: [{ unique: true, fields: ["coach_id", "client_id"] }],
+    indexes: [
+      { unique: true, fields: ["coach_id", "client_id"] },
+      { unique: true, fields: ["client_id"] },
+    ],
   },
 );

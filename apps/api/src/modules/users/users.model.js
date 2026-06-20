@@ -10,6 +10,7 @@ UserModel.init(
     email: { type: DataTypes.STRING, allowNull: false, unique: true },
     passwordHash: { type: DataTypes.STRING, allowNull: false },
     name: { type: DataTypes.STRING, allowNull: false },
+    coachCode: { type: DataTypes.STRING, allowNull: true, unique: true },
     locale: { type: DataTypes.ENUM("es", "en"), allowNull: false, defaultValue: "es" },
     active: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
   },

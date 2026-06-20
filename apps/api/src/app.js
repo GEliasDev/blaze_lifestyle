@@ -6,6 +6,7 @@ import { authRouter } from "./modules/auth/auth.route.js";
 import { coachPlansRouter, clientPlanRouter } from "./modules/mealplans/mealplans.route.js";
 import { clientEntriesRouter, photosRouter } from "./modules/nutrition/nutrition.route.js";
 import { coachingRouter } from "./modules/coaching/coaching.route.js";
+import { accountRouter } from "./modules/account/account.route.js";
 
 export function createApp() {
   const app = express();
@@ -21,6 +22,7 @@ export function createApp() {
   app.use("/api/me", clientEntriesRouter);
   app.use("/api/photos", photosRouter);
   app.use("/api/coach", coachingRouter);
+  app.use("/api/me", accountRouter);
   app.use(errorHandler);
   return app;
 }

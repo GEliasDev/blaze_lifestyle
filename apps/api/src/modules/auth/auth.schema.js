@@ -1,1 +1,1 @@
-export { loginSchema } from "@blaze/shared";
+export { loginSchema, registerSchema } from "@blaze/shared";
