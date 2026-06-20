@@ -4,6 +4,7 @@ import { config } from "./config.js";
 import { errorHandler } from "./middleware/error.js";
 import { authRouter } from "./modules/auth/auth.route.js";
 import { coachInvitationsRouter, inviteAcceptRouter } from "./modules/invitations/invitations.route.js";
+import { coachPlansRouter, clientPlanRouter } from "./modules/mealplans/mealplans.route.js";
 
 export function createApp() {
   const app = express();
@@ -16,6 +17,8 @@ export function createApp() {
   app.use("/api/auth", authRouter);
   app.use("/api/auth", inviteAcceptRouter);
   app.use("/api/coach", coachInvitationsRouter);
+  app.use("/api/coach", coachPlansRouter);
+  app.use("/api/me", clientPlanRouter);
   app.use(errorHandler);
   return app;
 }
