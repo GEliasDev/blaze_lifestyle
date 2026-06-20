@@ -56,9 +56,13 @@ Tokens via Tailwind theme + CSS variables — never hardcode hex in components.
   evidence** of eating the assigned meal. One active plan per client (history kept). Plan items
   support **both** weekly-recurring (`day_of_week`) **and** date-specific (`specific_date`)
   scheduling; date-specific overrides the weekday for that date.
-- A meal entry links to the `plan_item_id` it evidences (nullable = off-plan).
-- **Compliance:** client self-reports (`client_compliance` yes/no/na); coach confirms/corrects
-  (`coach_compliance` yes/no). Effective compliance for metrics = coach's value if set, else client's.
+- **Client logs evidence only** (refined 2026-06-20): from "My Plan" the client taps an assigned
+  meal and uploads photo(s) as evidence. `POST /api/me/entries` requires `plan_item_id`; the server
+  derives `category` from the plan item and verifies it belongs to the client's active plan. The
+  client sends no category/description/compliance — only photos + optional symptoms.
+- **Compliance is coach-only:** the coach sets `coach_compliance` (yes/no) when reviewing the photo;
+  null = pending review. `client_compliance` is legacy (always `na`). Metrics: `compliancePct` over
+  reviewed entries + a `pendingReview` count.
 - Symptoms: boolean + optional description.
 - Onboarding is **open registration**: anyone registers as `client` or `coach` (`POST /api/auth/register`,
   auto-login). A coach gets a generated, unique **`coach_code`** (shown at registration + always in the

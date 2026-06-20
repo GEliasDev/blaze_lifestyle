@@ -13,9 +13,10 @@ foundation plus a complete **Nutrition tracking module** with two sides:
 
 - **Coach assigns the meal plan** — the coach defines what each client should eat (a per-client
   **meal guide**). The client logs meals as **photo evidence** that they ate the assigned meal.
-- **Client app** — mobile-first PWA where a coached client sees their assigned plan and logs meals
-  (photos, time, category, the plan item being fulfilled, self-reported compliance, digestive
-  symptoms) on a daily timeline.
+- **Client app** — mobile-first PWA where a coached client sees their assigned plan and, **from "My
+  Plan"**, uploads a **photo as evidence** of each assigned meal (plus optional digestive symptoms).
+  The client does **not** choose what to eat and does **not** self-report compliance — the coach
+  assigns the meals and judges compliance from the photo. (Refined 2026-06-20.)
 - **Coach panel** — responsive (mobile + desktop) view where the single coach manages clients,
   assigns/edits their meal plan, reviews each client's nutrition timeline, **confirms compliance**
   against the photo evidence, leaves feedback, and sees per-client metrics.
@@ -159,14 +160,14 @@ meal_plan_items                     # supports BOTH weekly-recurring and date-sp
 meal_entries
   id                    uuid pk
   client_id             uuid fk → users.id
-  plan_item_id          uuid fk → meal_plan_items.id null  # the assigned meal this evidences (null = off-plan)
-  category              enum('Breakfast','AM Snack','Lunch','PM Snack','Dinner','Supplement')
+  plan_item_id          uuid fk → meal_plan_items.id   # the assigned meal this evidences (required)
+  category              enum('Breakfast','AM Snack','Lunch','PM Snack','Dinner','Supplement')  # derived server-side from the plan item
   description           text null
   eaten_at              timestamptz          # date + time of the meal
   has_symptoms          boolean default false
   symptom_description   text null
-  client_compliance     enum('yes','no','na') default 'na'   # self-reported by client
-  coach_compliance      enum('yes','no') null                # coach confirmation/correction
+  client_compliance     enum('yes','no','na') default 'na'   # legacy; clients no longer self-report (always 'na')
+  coach_compliance      enum('yes','no') null                # coach's verdict (null = pending review)
   coach_compliance_at   timestamptz null
   created_at            timestamptz
   updated_at            timestamptz
@@ -191,8 +192,11 @@ coach_comments
 **Notes**
 - Photos live in R2; Postgres stores only keys. Deleting an entry **hard-deletes** the row, its
   `meal_photos`, and the underlying R2 objects (full + thumb).
-- **Effective compliance** for metrics = `coach_compliance` when the coach has confirmed, otherwise
-  the client's `client_compliance`. Off-plan entries (`plan_item_id` null) count as `na`.
+- **Compliance is coach-only** now: an entry is `yes`/`no` once the coach reviews the photo, else
+  **pending** (`coach_compliance` null). `client_compliance` is retained in the schema for history but
+  is no longer written by the client (always `na`). Every entry is on-plan (`plan_item_id` required).
+- **Metrics:** `compliancePct` = `yes` / (reviewed entries with `coach_compliance` set); a separate
+  `pendingReview` counts entries the coach has not yet judged.
 - **Resolving today's assigned meals:** for a given client + date, take the client's active plan and,
   per category, use the `specific_date` item if one exists for that date, else the `day_of_week`
   item matching the date's weekday. This is the list the client logs evidence against.
@@ -239,12 +243,14 @@ client can only touch their own data and a coach only their own clients' data.
 
 ### Client — nutrition (`/api/me/...`, role: client)
 - `GET    /me/plan` → own active plan (weekly grid + date overrides), read-only
-- `GET    /me/plan/today?date=YYYY-MM-DD` → resolved assigned meals for that date (per category)
-- `GET    /me/entries` → own entries (filters: category, hasSymptoms, date, compliance)
-- `POST   /me/entries` → create entry (multipart: fields + 1..n photos)
+- `GET    /me/plan/today?date=YYYY-MM-DD` → resolved assigned meals for that date, each with
+  `loggedEntryId` (the entry already evidencing it that day) or `null`
+- `GET    /me/entries` → own entries (filters: category, hasSymptoms, date)
+- `POST   /me/entries` → **evidence for an assigned meal**: multipart `{ planItemId, eatenAt?,
+  hasSymptoms?, symptomDescription? }` + 1..n photos. Server validates the plan item belongs to the
+  client's active plan and **derives the category** from it; client does not send category/compliance.
 - `GET    /me/entries/:id` → detail + photos + coach comments (marks comments read)
-- `PATCH  /me/entries/:id` → edit fields and/or add/remove photos
-- `DELETE /me/entries/:id` → hard delete (removes R2 objects)
+- `DELETE /me/entries/:id` → hard delete (removes the photo objects) — lets the client re-do evidence
 - `GET    /me/profile` / `PATCH /me/profile` → name, locale
 
 **Filters** (shared query contract, validated by Zod): `category`, `symptoms` (bool),
@@ -298,18 +304,18 @@ touch-first). Implemented as **Tailwind theme tokens + CSS variables**, not inli
 ### Client (mobile-first)
 1. **Register / Login** — registration chooses role (client/coach); a client may enter a coach code
    (optional). **Settings** — shows the linked coach, or a field to enter a coach code to link (one-time).
-2. **Timeline (home)** — entries grouped by day, sticky date dividers, filter bar (category,
-   symptoms-only, compliance, date), symptom + compliance badges, empty state.
-3. **My plan** — read-only view of the assigned meal guide: a weekly grid (Mon–Sun × categories)
-   with any date-specific overrides; highlights **today's assigned meals** and which are still
-   un-logged.
-4. **New entry** — starts from an assigned plan item ("log evidence for *Breakfast: oatmeal*") or
-   off-plan; photos (camera capture, multi), time, category (prefilled from the plan item),
-   self-reported compliance, description, **and symptoms** (added vs. mockup, which only captured
-   symptoms on edit). Save disabled until ≥1 photo + category. Inline validation.
-5. **Entry detail** — photo gallery, meal time, category, the assigned item it evidences,
-   compliance (own + coach's confirmation), digestive status, **coach comments** (marked read on open).
-6. **Edit entry** — same fields; add/remove photos; delete entry (confirm dialog).
+2. **My plan (action hub)** — **today's assigned meals** listed first, each with a status (pending /
+   evidence uploaded) and an action: pending → **Upload evidence**; uploaded → open the entry. Below,
+   the read-only weekly grid (Mon–Sun × categories) with any date-specific overrides. This is where
+   the client logs — there is no free-form add. Bottom nav: **Diary · My plan · Settings** (no "+").
+3. **Upload evidence** — reached by tapping a pending assigned meal. Shows the assigned meal
+   **read-only** (category + title); the client adds **photo(s)** (camera capture, multi) and may flag
+   **digestive symptoms** (+ description). Submits evidence linked to that `planItemId`. Save disabled
+   until ≥1 photo. No category/description/compliance fields.
+4. **Diary (timeline)** — past entries grouped by day; each shows the assigned meal it evidences, the
+   coach's compliance verdict or **"Pending review"**, and a symptom flag. Read-only history.
+5. **Entry detail** — photo gallery, the assigned meal evidenced, coach verdict or "Pending review",
+   digestive status, **coach comments** (marked read on open); delete to re-do the evidence.
 
 ### Coach — meal plan
 - **Assign / edit plan** — weekly grid editor (per weekday × category) plus date-specific overrides;
@@ -321,8 +327,10 @@ touch-first). Implemented as **Tailwind theme tokens + CSS variables**, not inli
    coach's **shareable code** is shown/copyable here (replaces the old invite-by-email action).
 3. **Client detail** — that client's nutrition timeline (same filters) + access to their meal plan.
 4. **Assign/edit meal plan** — weekly grid + date overrides editor (see "Coach — meal plan" above).
-5. **Entry detail** — view entry + photo evidence + **add comment** + **confirm/correct compliance**.
-6. **Metrics summary** — compliance %, days-with-symptoms, logging streak for the selected client.
+5. **Entry detail** — view photo evidence + the **assigned meal it evidences** + **add comment** +
+   **set compliance verdict** (yes/no; this is the only place compliance is decided).
+6. **Metrics summary** — compliance % (over reviewed entries), pending-review count,
+   days-with-symptoms for the selected client.
 
 ---
 
