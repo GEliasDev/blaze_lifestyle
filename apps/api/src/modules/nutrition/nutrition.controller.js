@@ -14,10 +14,6 @@ export const nutritionController = {
     try { res.json(await nutritionService.getEntryWithComments(req.user.sub, req.params.id)); }
     catch (err) { next(err); }
   },
-  async update(req, res, next) {
-    try { res.json(await nutritionService.updateEntry(req.user.sub, req.params.id, req.body)); }
-    catch (err) { next(err); }
-  },
   async remove(req, res, next) {
     try { await nutritionService.deleteEntry(req.user.sub, req.params.id); res.status(204).end(); }
     catch (err) { next(err); }

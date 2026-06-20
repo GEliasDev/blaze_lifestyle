@@ -13,11 +13,6 @@ async function loadEntryForCoach(coachId, entryId) {
   return entry;
 }
 
-function effective(entry) {
-  if (entry.planItemId == null) return "na";
-  return entry.coachCompliance ?? entry.clientCompliance;
-}
-
 export const coachingService = {
   async listClients(coachId) {
     const links = await CoachClientModel.findAll({ where: { coachId } });
@@ -34,9 +29,8 @@ export const coachingService = {
   async getClientMetrics(coachId, clientId) {
     await assertCoachOwnsClient(coachId, clientId);
     const entries = await MealEntryModel.findAll({ where: { clientId } });
-    const total = entries.length;
-    const onPlan = entries.filter((e) => e.planItemId != null);
-    const compliant = onPlan.filter((e) => effective(e) === "yes").length;
+    const reviewed = entries.filter((e) => e.coachCompliance != null);
+    const compliant = reviewed.filter((e) => e.coachCompliance === "yes").length;
     const symptomDays = new Set(
       entries.filter((e) => e.hasSymptoms).map((e) => new Date(e.eatenAt).toISOString().slice(0, 10)),
     ).size;
@@ -44,8 +38,9 @@ export const coachingService = {
     return {
       id: client.id, name: client.name, email: client.email,
       metrics: {
-        totalEntries: total,
-        compliancePct: onPlan.length ? Math.round((compliant / onPlan.length) * 100) : null,
+        totalEntries: entries.length,
+        compliancePct: reviewed.length ? Math.round((compliant / reviewed.length) * 100) : null,
+        pendingReview: entries.length - reviewed.length,
         symptomDays,
       },
     };

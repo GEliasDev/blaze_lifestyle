@@ -1,6 +1,8 @@
 import { MealEntryModel } from "./mealEntry.model.js";
 import { MealPhotoModel } from "./mealPhoto.model.js";
 import { CoachClientModel } from "../coaching/coachClients.model.js";
+import { MealPlanItemModel } from "../mealplans/mealPlanItem.model.js";
+import { MealPlanModel } from "../mealplans/mealPlan.model.js";
 import { buildKey, makeThumbnail, putObject, deleteObject } from "../../lib/storage.js";
 import { HttpError } from "../../middleware/error.js";
 
@@ -17,7 +19,17 @@ function serialize(entry, photos) {
 export const nutritionService = {
   async createEntry(clientId, data, files) {
     if (!files || files.length === 0) throw new HttpError(400, "At least one photo is required");
-    const entry = await MealEntryModel.create({ clientId, ...data });
+    const item = await MealPlanItemModel.findByPk(data.planItemId);
+    if (!item) throw new HttpError(404, "Plan item not found");
+    const plan = await MealPlanModel.findByPk(item.planId);
+    if (!plan || plan.clientId !== clientId || !plan.active) throw new HttpError(403, "Not your assigned meal");
+    const entry = await MealEntryModel.create({
+      clientId, planItemId: item.id, category: item.category,
+      eatenAt: data.eatenAt ?? new Date(),
+      hasSymptoms: data.hasSymptoms ?? false,
+      symptomDescription: data.symptomDescription ?? null,
+      clientCompliance: "na",
+    });
     const photos = [];
     for (let i = 0; i < files.length; i++) {
       const full = buildKey("meals", "jpg");
@@ -46,14 +58,6 @@ export const nutritionService = {
   async getEntryForOwner(clientId, id) {
     const entry = await MealEntryModel.findByPk(id);
     if (!entry || entry.clientId !== clientId) throw new HttpError(404, "Entry not found");
-    const photos = await MealPhotoModel.findAll({ where: { entryId: id }, order: [["position", "ASC"]] });
-    return serialize(entry, photos);
-  },
-
-  async updateEntry(clientId, id, data) {
-    const entry = await MealEntryModel.findByPk(id);
-    if (!entry || entry.clientId !== clientId) throw new HttpError(404, "Entry not found");
-    await entry.update(data);
     const photos = await MealPhotoModel.findAll({ where: { entryId: id }, order: [["position", "ASC"]] });
     return serialize(entry, photos);
   },
