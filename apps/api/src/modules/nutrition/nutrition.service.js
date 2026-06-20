@@ -70,6 +70,14 @@ export const nutritionService = {
     await entry.destroy();
   },
 
+  async getEntryWithComments(clientId, id) {
+    const base = await this.getEntryForOwner(clientId, id);
+    const { CoachCommentModel } = await import("../coaching/coachComment.model.js");
+    const comments = await CoachCommentModel.findAll({ where: { entryId: id }, order: [["created_at", "ASC"]] });
+    await CoachCommentModel.update({ readByClientAt: new Date() }, { where: { entryId: id, readByClientAt: null } });
+    return { ...base, comments: comments.map((c) => ({ id: c.id, body: c.body, createdAt: c.createdAt })) };
+  },
+
   // Returns the storage key if the requester may read it, else throws.
   async photoAccess(requester, key) {
     const photo = await MealPhotoModel.findOne({ where: { [key.startsWith("thumbs/") ? "thumbKey" : "storageKey"]: key } });

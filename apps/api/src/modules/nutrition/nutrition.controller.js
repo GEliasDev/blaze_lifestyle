@@ -11,7 +11,7 @@ export const nutritionController = {
     catch (err) { next(err); }
   },
   async get(req, res, next) {
-    try { res.json(await nutritionService.getEntryForOwner(req.user.sub, req.params.id)); }
+    try { res.json(await nutritionService.getEntryWithComments(req.user.sub, req.params.id)); }
     catch (err) { next(err); }
   },
   async update(req, res, next) {
