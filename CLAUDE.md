@@ -12,7 +12,8 @@ app for logging meals, plus a responsive coach panel for reviewing clients. Futu
   `.js` for Node, `.jsx` for React components. Node ESM imports use explicit file extensions.
 - **Frontend:** React + Vite + Tailwind CSS + React Router + react-i18next. PWA (installable).
 - **Backend:** Node + Express, Sequelize ORM over **PostgreSQL**, Zod validation, JWT auth.
-- **Photos:** Cloudflare R2 (S3-compatible); thumbnails via `sharp`; served through an authenticated proxy.
+- **Photos:** pluggable storage in `apps/api/src/lib/storage.js` — **local disk** (`apps/api/uploads/`, gitignored) when `R2_ENDPOINT` is empty (dev default), **Cloudflare R2** (S3-compatible) when configured. Same interface either way; thumbnails via `sharp`; served through an authenticated proxy (`GET /api/photos/:key`).
+- **LAN/phone dev:** web api base derives from `window.location.hostname:4000`; Vite `server.host=true`; API CORS reflects request origin in dev. Open `http://<PC-LAN-IP>:5173` on the phone.
 - **Monorepo:** workspaces — `apps/web`, `apps/api`, `packages/shared`. Shared package exports
   enums/constants + Zod schemas (runtime validation shared by both apps).
 
