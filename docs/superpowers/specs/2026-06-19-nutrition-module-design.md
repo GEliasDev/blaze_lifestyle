@@ -28,9 +28,20 @@ compliance → metrics roll up per client.
 Future modules (Exercise, Sleep, Body Composition) are **out of scope** here but the architecture is
 designed so they slot in as sibling modules without rework.
 
+### Onboarding (updated 2026-06-20 — open registration with coach codes)
+- **Open self-registration:** anyone registers as `client` or `coach` (`POST /api/auth/register`,
+  auto-login). The email-invitation flow and the single-coach seeder are **removed**.
+- A **coach** gets a generated, unique, human-shareable **coach code** at registration; it is shown
+  then and is always visible/copyable in the coach panel.
+- A **client** links to a coach by entering that code — optionally at registration, or later in the
+  client settings screen. **One coach, fixed:** once linked, a client cannot self-relink (entering a
+  code while already linked → 409).
+
 ### Non-goals (explicitly deferred)
 - Exercise, Sleep, Body Composition modules.
-- Multiple coaches / super-admin role (a single fixed coach is seeded).
+- Super-admin role / coach-of-coaches.
+- Client self-service coach switching (linking is one-time; changing requires manual intervention).
+- Registration rate-limiting / abuse protection (noted as future hardening).
 - Two-way chat (coach feedback is one-way: coach comments, client reads).
 - Offline write support (PWA is installable + cached shell; logging requires connectivity for v1).
 
@@ -48,7 +59,7 @@ designed so they slot in as sibling modules without rework.
 | API | Node + Express |
 | ORM | Sequelize over PostgreSQL |
 | Validation | Zod (request/response schemas) |
-| Auth | JWT (access + refresh), invitation-based onboarding |
+| Auth | JWT (access + refresh); open self-registration (client/coach); client→coach link via coach code |
 | Photo storage | Cloudflare R2 (S3-compatible); thumbnails generated with `sharp` |
 | Monorepo | npm/pnpm workspaces: `apps/web`, `apps/api`, `packages/shared` |
 
@@ -75,13 +86,11 @@ blaze_lifestyle/
 │       │   ├── modules/
 │       │   │   ├── auth/         # auth.model · auth.schema · auth.service · auth.controller · auth.route
 │       │   │   ├── users/
-│       │   │   ├── invitations/
-│       │   │   ├── coaching/     # coach↔client relations, comments, compliance, metrics
+│       │   │   ├── coaching/     # coach↔client relations (via coach code), comments, compliance, metrics
 │       │   │   ├── mealplans/    # meal plans + plan items (assigned by coach)
 │       │   │   └── nutrition/    # meal entries + photos (evidence)
 │       │   ├── middleware/       # auth guard, role guard, error handler, validation
-│       │   ├── lib/              # db (sequelize), storage (R2 + sharp), config
-│       │   ├── db/               # migrations, seeders (seeds the single coach)
+│       │   ├── lib/              # db (sequelize), storage (R2 + sharp), config, coachCode generator
 │       │   └── server.ts
 │       └── tests/
 ├── packages/
@@ -111,26 +120,20 @@ users
   email         text unique
   password_hash text
   name          text
+  coach_code    text unique null     # set for coaches only; clients enter it to link
   locale        enum('es','en') default 'es'
   active        boolean default true
   created_at    timestamptz
   updated_at    timestamptz
 
-coach_clients                       # coach↔client relationship (coach has N clients)
+coach_clients                       # coach↔client relationship (coach has N clients; client has ≤1 coach)
   id            uuid pk
   coach_id      uuid fk → users.id
-  client_id     uuid fk → users.id
+  client_id     uuid fk → users.id   # unique → a client links to at most one coach
   created_at    timestamptz
-  unique(coach_id, client_id)
+  unique(coach_id, client_id), unique(client_id)
 
-invitations
-  id            uuid pk
-  coach_id      uuid fk → users.id
-  email         text
-  token         text unique          # used in the accept-invite link
-  status        enum('pending','accepted','expired') default 'pending'
-  expires_at    timestamptz
-  created_at    timestamptz
+# (the `invitations` table is removed — onboarding is open registration + coach code)
 
 meal_plans                          # one active plan per client (history kept)
   id            uuid pk
@@ -195,7 +198,9 @@ coach_comments
   item matching the date's weekday. This is the list the client logs evidence against.
 - Metrics (compliance %, days-with-symptoms, logging streak) are **computed on read** via queries,
   not stored.
-- The single coach is created by a **seeder**; there is no coach self-signup.
+- **Coach code** is generated at coach registration: a short, unique, human-shareable string (6 chars
+  from an unambiguous alphabet, no O/0/I/1), regenerated on collision. Stored on `users.coach_code`
+  and returned in the user payload so the coach panel can display it.
 
 ---
 
@@ -205,15 +210,19 @@ All routes under `/api`. Auth via `Authorization: Bearer <accessToken>`. Role gu
 client can only touch their own data and a coach only their own clients' data.
 
 ### Auth (`/api/auth`)
+- `POST /register` → `{ name, email, password, role, coachCode? }` → creates user, auto-logs in,
+  returns `{ accessToken, refreshToken, user }`. Coach: generates + returns `coachCode` in `user`.
+  Client with a valid `coachCode`: links to that coach; invalid code → 400; no code → unlinked client.
 - `POST /login` → `{ accessToken, refreshToken, user }`
 - `POST /refresh` → new access token
 - `POST /logout`
-- `GET  /invitations/:token` → invitation preview (email, coach name) for the accept screen
-- `POST /invitations/:token/accept` → `{ name, password }` creates the client user + links to coach
+
+### Client — coach link (`/api/me/...`, role: client)
+- `GET  /coach` → the client's linked coach `{ id, name }` or `null`
+- `POST /coach` → `{ coachCode }` link to a coach; **409 if already linked** (one-time); invalid → 404
 
 ### Coach — clients (`/api/coach/...`, role: coach)
 - `GET    /clients` → list of the coach's clients (with summary badges)
-- `POST   /invitations` → `{ email }` create + (optionally) email an invite
 - `GET    /clients/:clientId` → client profile + nutrition metrics summary
 - `GET    /clients/:clientId/entries` → that client's meal entries (supports filters, see below)
 - `GET    /clients/:clientId/entries/:entryId` → entry detail + photos + comments
@@ -287,7 +296,8 @@ touch-first). Implemented as **Tailwind theme tokens + CSS variables**, not inli
 ## 7. Screens in Scope
 
 ### Client (mobile-first)
-1. **Login** / **Accept invitation** (set name + password from invite link).
+1. **Register / Login** — registration chooses role (client/coach); a client may enter a coach code
+   (optional). **Settings** — shows the linked coach, or a field to enter a coach code to link (one-time).
 2. **Timeline (home)** — entries grouped by day, sticky date dividers, filter bar (category,
    symptoms-only, compliance, date), symptom + compliance badges, empty state.
 3. **My plan** — read-only view of the assigned meal guide: a weekly grid (Mon–Sun × categories)
@@ -306,9 +316,9 @@ touch-first). Implemented as **Tailwind theme tokens + CSS variables**, not inli
   each item has title + notes. Creating a new plan deactivates the previous one (history kept).
 
 ### Coach (responsive)
-1. **Login.**
-2. **Clients list** — each client with summary badges (streak, recent symptoms, compliance);
-   **Invite client** action.
+1. **Register / Login.**
+2. **Clients list** — each client with summary badges (streak, recent symptoms, compliance); the
+   coach's **shareable code** is shown/copyable here (replaces the old invite-by-email action).
 3. **Client detail** — that client's nutrition timeline (same filters) + access to their meal plan.
 4. **Assign/edit meal plan** — weekly grid + date overrides editor (see "Coach — meal plan" above).
 5. **Entry detail** — view entry + photo evidence + **add comment** + **confirm/correct compliance**.
@@ -318,11 +328,12 @@ touch-first). Implemented as **Tailwind theme tokens + CSS variables**, not inli
 
 ## 8. Auth & Roles Flow
 
-1. Coach is **seeded** (email/password from env/seed config).
-2. Coach creates an **invitation** (`/api/coach/invitations`) → token link sent to client's email.
-3. Client opens link → **accept screen** sets name + password → `client` user created + linked via
-   `coach_clients`.
-4. Login issues JWT access + refresh. Frontend stores tokens, loads the **role-based route tree**.
+1. Anyone **registers** (`POST /api/auth/register`) as `client` or `coach`; registration auto-logs in.
+2. A **coach** receives a generated **coach code** (shown after registration, always visible in the panel).
+3. A **client** links to a coach by entering the code — optionally at registration, or later in
+   Settings (`POST /api/me/coach`). Linking is **one-time** (already-linked → 409); creates a
+   `coach_clients` row (unique per client).
+4. Login/register issue JWT access + refresh. Frontend stores tokens, loads the **role-based route tree**.
 5. **Guards:** route middleware checks role; service layer checks ownership (client owns entry /
    coach owns client) on every data access.
 
@@ -330,7 +341,8 @@ touch-first). Implemented as **Tailwind theme tokens + CSS variables**, not inli
 
 ## 9. Testing Strategy
 
-- **API (integration, per module):** auth + invite acceptance, entry CRUD, **permission/ownership**
+- **API (integration, per module):** registration (coach code generated; client links with/without
+  code; already-linked → 409), login, entry CRUD, **permission/ownership**
   (client cannot read another client; coach cannot read a non-client), photo upload (thumbnail
   created, R2 keys saved), filters, metrics computation. Run against a test PostgreSQL database.
 - **Frontend (component + flow):** timeline grouping/filtering, entry form validation + photo
@@ -343,13 +355,13 @@ touch-first). Implemented as **Tailwind theme tokens + CSS variables**, not inli
 ## 10. Build Phasing (within this spec)
 
 1. **Foundation:** monorepo, `shared` package, Express skeleton (config, db, error/validation
-   middleware, R2+sharp lib), auth module + seeder, Vite app shell (router, i18n, PWA, design-system
-   primitives).
+   middleware, R2+sharp lib), auth module (open registration + coach codes), Vite app shell (router,
+   i18n, PWA, design-system primitives).
 2. **Meal plans:** coach assigns a plan (weekly grid + date overrides); client read-only plan view
    and "today's assigned meals" resolution.
 3. **Nutrition — client:** meal entry CRUD + photos end-to-end, linked to plan items (the vertical
    slice).
-4. **Coach panel — nutrition:** clients list, invitations, client timeline, comments, **compliance
-   confirmation**, metrics.
+4. **Coach panel — nutrition:** clients list (with shareable coach code), client timeline, comments,
+   **compliance confirmation**, metrics.
 
 Each step is test-backed before moving on.

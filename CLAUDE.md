@@ -60,7 +60,11 @@ Tokens via Tailwind theme + CSS variables — never hardcode hex in components.
 - **Compliance:** client self-reports (`client_compliance` yes/no/na); coach confirms/corrects
   (`coach_compliance` yes/no). Effective compliance for metrics = coach's value if set, else client's.
 - Symptoms: boolean + optional description.
-- Onboarding is **invitation-only** (coach invites; no client self-signup). Single coach is **seeded**.
+- Onboarding is **open registration**: anyone registers as `client` or `coach` (`POST /api/auth/register`,
+  auto-login). A coach gets a generated, unique **`coach_code`** (shown at registration + always in the
+  coach panel). A client links to a coach by entering that code — optionally at registration or later in
+  Settings (`POST /api/me/coach`); linking is **one-time** (already-linked → 409). No email invitations,
+  no seeded coach. `users.coach_code` is set for coaches only and returned in the user payload.
 - Coach feedback is **one-way**: coach comments on an entry; client reads (marked read on open).
 - Deleting an entry **hard-deletes** the row, its photos, and the R2 objects.
 
