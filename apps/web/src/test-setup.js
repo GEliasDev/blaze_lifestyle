@@ -8,3 +8,12 @@ if (globalThis.AbortSignal && typeof window !== "undefined" && window.AbortSigna
   window.AbortSignal = globalThis.AbortSignal;
   window.AbortController = globalThis.AbortController;
 }
+
+// jsdom does not implement URL.createObjectURL / revokeObjectURL — stub them out
+// so AuthImage and similar components don't throw during cleanup.
+if (typeof URL.createObjectURL === "undefined") {
+  URL.createObjectURL = () => "blob:stub";
+}
+if (typeof URL.revokeObjectURL === "undefined") {
+  URL.revokeObjectURL = () => {};
+}
