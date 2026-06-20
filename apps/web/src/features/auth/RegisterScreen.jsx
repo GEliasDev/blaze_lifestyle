@@ -10,7 +10,7 @@ export function RegisterScreen() {
   const { t } = useTranslation();
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "", role: "coach", coachCode: "" });
+  const [form, setForm] = useState({ name: "", email: "", password: "", role: "client", coachCode: "" });
   const [error, setError] = useState(null);
   const [coachCode, setCoachCode] = useState(null);
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
