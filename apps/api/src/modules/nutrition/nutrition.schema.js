@@ -8,7 +8,10 @@ export const createEntrySchema = z.object({
   planItemId: z.string().uuid().optional(),
   description: z.string().optional(),
   eatenAt: z.string().min(1),
-  hasSymptoms: z.coerce.boolean().optional(),
+  hasSymptoms: z
+    .union([z.literal("true"), z.literal("false"), z.boolean()])
+    .transform((v) => v === true || v === "true")
+    .optional(),
   symptomDescription: z.string().optional(),
   clientCompliance: z.enum(["yes", "no", "na"]).optional(),
 });

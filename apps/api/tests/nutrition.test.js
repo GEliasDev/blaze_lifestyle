@@ -47,4 +47,19 @@ describe("nutrition entries", () => {
     const del = await request(app).delete(`/api/me/entries/${create.body.id}`).set("Authorization", `Bearer ${clientToken}`);
     expect(del.status).toBe(204);
   });
+
+  it("stores hasSymptoms=false as false and true as true (multipart strings)", async () => {
+    const f = await request(app).post("/api/me/entries").set("Authorization", `Bearer ${clientToken}`)
+      .field("category", "Dinner").field("eatenAt", "2026-06-16T20:00:00.000Z")
+      .field("hasSymptoms", "false").attach("photos", await jpeg(), "m.jpg");
+    expect(f.status).toBe(201);
+    const got = await request(app).get(`/api/me/entries/${f.body.id}`).set("Authorization", `Bearer ${clientToken}`);
+    expect(got.body.hasSymptoms).toBe(false);
+
+    const t = await request(app).post("/api/me/entries").set("Authorization", `Bearer ${clientToken}`)
+      .field("category", "Dinner").field("eatenAt", "2026-06-16T20:30:00.000Z")
+      .field("hasSymptoms", "true").attach("photos", await jpeg(), "m.jpg");
+    const gotT = await request(app).get(`/api/me/entries/${t.body.id}`).set("Authorization", `Bearer ${clientToken}`);
+    expect(gotT.body.hasSymptoms).toBe(true);
+  });
 });
