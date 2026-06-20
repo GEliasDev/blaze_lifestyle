@@ -29,8 +29,9 @@ export function CoachEntryScreen() {
       )}
       <div className="flex items-center justify-between">
         <h1 className="font-heading uppercase tracking-wide text-2xl">{t(`category.${entry.category}`)}</h1>
-        <ComplianceBadge value={entry.coachCompliance ?? entry.clientCompliance} />
+        <ComplianceBadge value={entry.coachCompliance ?? "pending"} />
       </div>
+      {entry.assignedTitle && <p className="text-ink/60">{t("evidence.assigned")}: {entry.assignedTitle}</p>}
       {entry.description && <p className="text-ink/70">{entry.description}</p>}
       <div className="flex gap-2">
         <Button variant="primary" onClick={() => setCompliance("yes")}>{t("compliance.yes")}</Button>

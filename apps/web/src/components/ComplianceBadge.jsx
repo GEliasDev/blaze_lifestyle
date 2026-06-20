@@ -1,10 +1,11 @@
 import { useTranslation } from "react-i18next";
-import { Check, X, Minus } from "lucide-react";
+import { Check, X, Minus, Clock } from "lucide-react";
 
 const styles = {
   yes: { cls: "bg-success text-white border-success", Icon: Check },
   no: { cls: "bg-danger text-white border-danger", Icon: X },
   na: { cls: "bg-white text-ink border-ink", Icon: Minus },
+  pending: { cls: "bg-muted text-ink/70 border-border", Icon: Clock },
 };
 export function ComplianceBadge({ value = "na" }) {
   const { t } = useTranslation();

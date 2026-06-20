@@ -31,7 +31,7 @@ export function EntryDetailScreen() {
         <div className="p-4 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-heading uppercase tracking-wide text-xl font-bold">{t(`category.${entry.category}`)}</h2>
-            <ComplianceBadge value={entry.coachCompliance ?? entry.clientCompliance} />
+            <ComplianceBadge value={entry.coachCompliance ?? "pending"} />
           </div>
           <div className={`flex items-center gap-2 font-heading uppercase text-sm ${entry.hasSymptoms ? "text-danger" : "text-ink/60"}`}>
             {entry.hasSymptoms ? <AlertCircle className="w-5 h-5" /> : <Check className="w-5 h-5" />}

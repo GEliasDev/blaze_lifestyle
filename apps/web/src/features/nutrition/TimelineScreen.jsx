@@ -38,7 +38,7 @@ export function TimelineScreen() {
                     {e.description && <p className="text-sm text-ink/70">{e.description}</p>}
                     <div className="flex items-center justify-between mt-1">
                       <span className="flex items-center gap-1 text-xs text-ink/50"><Clock className="w-3 h-3" />{time(e.eatenAt)}</span>
-                      <ComplianceBadge value={e.coachCompliance ?? e.clientCompliance} />
+                      <ComplianceBadge value={e.coachCompliance ?? "pending"} />
                     </div>
                   </div>
                 </Link>
