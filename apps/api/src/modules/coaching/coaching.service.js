@@ -3,6 +3,7 @@ import { CoachCommentModel } from "./coachComment.model.js";
 import { UserModel } from "../users/users.model.js";
 import { MealEntryModel } from "../nutrition/mealEntry.model.js";
 import { MealPhotoModel } from "../nutrition/mealPhoto.model.js";
+import { MealPlanItemModel } from "../mealplans/mealPlanItem.model.js";
 import { assertCoachOwnsClient } from "../../lib/ownership.js";
 import { HttpError } from "../../middleware/error.js";
 
@@ -70,10 +71,12 @@ export const coachingService = {
     if (!entry || entry.clientId !== clientId) throw new HttpError(404, "Entry not found");
     const photos = await MealPhotoModel.findAll({ where: { entryId }, order: [["position", "ASC"]] });
     const comments = await CoachCommentModel.findAll({ where: { entryId }, order: [["created_at", "ASC"]] });
+    const item = entry.planItemId ? await MealPlanItemModel.findByPk(entry.planItemId) : null;
     return {
       id: entry.id, category: entry.category, description: entry.description, eatenAt: entry.eatenAt,
       hasSymptoms: entry.hasSymptoms, symptomDescription: entry.symptomDescription,
       clientCompliance: entry.clientCompliance, coachCompliance: entry.coachCompliance,
+      assignedTitle: item ? item.title : null,
       photos: photos.map((p) => ({ thumbKey: p.thumbKey, storageKey: p.storageKey, position: p.position })),
       comments: comments.map((c) => ({ id: c.id, body: c.body, createdAt: c.createdAt })),
     };

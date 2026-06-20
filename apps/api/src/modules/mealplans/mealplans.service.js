@@ -1,5 +1,7 @@
+import { Op } from "sequelize";
 import { MealPlanModel } from "./mealPlan.model.js";
 import { MealPlanItemModel } from "./mealPlanItem.model.js";
+import { MealEntryModel } from "../nutrition/mealEntry.model.js";
 import { assertCoachOwnsClient } from "../../lib/ownership.js";
 import { HttpError } from "../../middleware/error.js";
 
@@ -52,12 +54,21 @@ export const mealplansService = {
     const active = await mealplansService.getActivePlan(clientId);
     if (!active) return [];
     const dow = new Date(`${dateStr}T00:00:00`).getDay(); // 0=Sun..6=Sat
-    return CATEGORIES.map((category) => {
+    const rows = CATEGORIES.map((category) => {
       const items = active.items.filter((i) => i.category === category);
       const dated = items.find((i) => String(i.specificDate).slice(0, 10) === dateStr);
       const weekly = items.find((i) => i.dayOfWeek === dow);
       const chosen = dated ?? weekly;
       return chosen ? { category, itemId: chosen.id, title: chosen.title, notes: chosen.notes } : null;
     }).filter(Boolean);
+    const dayStart = new Date(`${dateStr}T00:00:00`);
+    const dayEnd = new Date(`${dateStr}T23:59:59.999`);
+    for (const r of rows) {
+      const entry = await MealEntryModel.findOne({
+        where: { clientId, planItemId: r.itemId, eatenAt: { [Op.between]: [dayStart, dayEnd] } },
+      });
+      r.loggedEntryId = entry ? entry.id : null;
+    }
+    return rows;
   },
 };

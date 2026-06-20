@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
+import sharp from "sharp";
 import { createApp } from "../src/app.js";
 import { sequelize } from "../src/lib/db.js";
 import { signAccess } from "../src/lib/jwt.js";
@@ -38,6 +39,20 @@ describe("meal plans", () => {
     expect(today.status).toBe(200);
     const breakfast = today.body.find((r) => r.category === "Breakfast");
     expect(breakfast.title).toBe("Huevos (especial)"); // date-specific overrides weekday
+
+    // loggedEntryId is null before logging
+    const beforeLog = today.body.find((r) => r.category === "Breakfast");
+    expect(beforeLog.loggedEntryId).toBeNull();
+
+    // log evidence for that breakfast item
+    const jpeg = await sharp({ create: { width: 16, height: 16, channels: 3, background: "red" } }).jpeg().toBuffer();
+    await request(app).post("/api/me/entries").set("Authorization", `Bearer ${clientToken}`)
+      .field("planItemId", beforeLog.itemId).field("eatenAt", "2026-06-15T08:00:00.000Z")
+      .attach("photos", jpeg, "m.jpg");
+
+    // now loggedEntryId should be truthy
+    const after = await request(app).get(`/api/me/plan/today?date=2026-06-15`).set("Authorization", `Bearer ${clientToken}`);
+    expect(after.body.find((r) => r.category === "Breakfast").loggedEntryId).toBeTruthy();
   });
 
   it("rejects a coach acting on a non-client", async () => {

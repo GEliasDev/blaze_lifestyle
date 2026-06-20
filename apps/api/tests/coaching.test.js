@@ -52,6 +52,10 @@ describe("coaching", () => {
     // client sees the coach comment on the entry detail
     const detail = await request(app).get(`/api/me/entries/${entryId}`).set("Authorization", `Bearer ${clientToken}`);
     expect(detail.body.comments.length).toBe(1);
+
+    // coach can fetch the entry detail and see the assignedTitle from the plan item
+    const coachDetail = await request(app).get(`/api/coach/clients/${clientId}/entries/${entryId}`).set("Authorization", `Bearer ${coachToken}`);
+    expect(coachDetail.body.assignedTitle).toBe("Avena");
   });
 
   it("forbids commenting on a non-client's entry", async () => {
