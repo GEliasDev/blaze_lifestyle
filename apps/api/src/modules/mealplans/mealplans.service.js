@@ -48,12 +48,13 @@ export const mealplansService = {
   // Returns one row per category for the given date, choosing a date-specific
   // item over the weekday item.
   async resolveForDate(clientId, dateStr) {
-    const active = await this.getActivePlan(clientId);
+    if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) throw new HttpError(400, "A valid ?date=YYYY-MM-DD is required");
+    const active = await mealplansService.getActivePlan(clientId);
     if (!active) return [];
     const dow = new Date(`${dateStr}T00:00:00`).getDay(); // 0=Sun..6=Sat
     return CATEGORIES.map((category) => {
       const items = active.items.filter((i) => i.category === category);
-      const dated = items.find((i) => i.specificDate === dateStr);
+      const dated = items.find((i) => String(i.specificDate).slice(0, 10) === dateStr);
       const weekly = items.find((i) => i.dayOfWeek === dow);
       const chosen = dated ?? weekly;
       return chosen ? { category, itemId: chosen.id, title: chosen.title, notes: chosen.notes } : null;

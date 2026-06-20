@@ -17,3 +17,14 @@ export const planItemSchema = z.object({
   (d) => (d.dayOfWeek === undefined) !== (d.specificDate === undefined),
   { message: "Provide exactly one of dayOfWeek or specificDate" },
 );
+
+export const patchItemSchema = z.object({
+  category: CATEGORY.optional(),
+  title: z.string().min(1).optional(),
+  notes: z.string().optional(),
+  dayOfWeek: z.number().int().min(0).max(6).optional(),
+  specificDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+}).refine(
+  (d) => !(d.dayOfWeek !== undefined && d.specificDate !== undefined),
+  { message: "Provide at most one of dayOfWeek or specificDate" },
+);

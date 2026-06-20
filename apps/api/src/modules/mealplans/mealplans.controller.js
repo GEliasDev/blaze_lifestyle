@@ -1,4 +1,5 @@
 import { mealplansService } from "./mealplans.service.js";
+import { assertCoachOwnsClient } from "../../lib/ownership.js";
 
 export const mealplansController = {
   async createPlan(req, res, next) {
@@ -8,8 +9,10 @@ export const mealplansController = {
     } catch (err) { next(err); }
   },
   async getClientPlan(req, res, next) {
-    try { res.json(await mealplansService.getActivePlan(req.params.clientId)); }
-    catch (err) { next(err); }
+    try {
+      await assertCoachOwnsClient(req.user.sub, req.params.clientId);
+      res.json(await mealplansService.getActivePlan(req.params.clientId));
+    } catch (err) { next(err); }
   },
   async addItem(req, res, next) {
     try { res.status(201).json(await mealplansService.addItem(req.user.sub, req.params.planId, req.body)); }

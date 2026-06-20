@@ -47,4 +47,18 @@ describe("meal plans", () => {
       .set("Authorization", `Bearer ${coachToken}`).send({ name: "X", startDate: "2026-06-01" });
     expect(res.status).toBe(403);
   });
+
+  it("forbids a coach from reading a non-client's plan", async () => {
+    const stranger = await UserModel.create({ role: "client", email: "stranger@x.com", name: "Stranger", passwordHash: await hashPassword("secret12") });
+    const res = await request(app).get(`/api/coach/clients/${stranger.id}/plan`).set("Authorization", `Bearer ${coachToken}`);
+    expect(res.status).toBe(403);
+  });
+
+  it("allows a partial PATCH of a plan item (title only)", async () => {
+    const plan = await request(app).post(`/api/coach/clients/${clientId}/plan`).set("Authorization", `Bearer ${coachToken}`).send({ name: "Plan2", startDate: "2026-07-01" });
+    const item = await request(app).post(`/api/coach/plans/${plan.body.id}/items`).set("Authorization", `Bearer ${coachToken}`).send({ category: "Lunch", title: "Pollo", dayOfWeek: 2 });
+    const res = await request(app).patch(`/api/coach/plan-items/${item.body.id}`).set("Authorization", `Bearer ${coachToken}`).send({ title: "Pollo y arroz" });
+    expect(res.status).toBe(200);
+    expect(res.body.title).toBe("Pollo y arroz");
+  });
 });
