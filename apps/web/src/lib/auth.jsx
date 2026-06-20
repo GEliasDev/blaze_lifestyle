@@ -18,7 +18,7 @@ export function AuthProvider({ children }) {
     return res.user;
   }
   function logout() {
-    localStorage.clear();
+    ["accessToken", "refreshToken", "user"].forEach((k) => localStorage.removeItem(k));
     setUser(null);
   }
   return <Ctx.Provider value={{ user, login, logout }}>{children}</Ctx.Provider>;

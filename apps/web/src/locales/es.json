@@ -1,1 +1,10 @@
-{ "auth": { "login": "Iniciar sesión", "email": "Correo", "password": "Contraseña" } }
+{
+  "auth": { "login": "Iniciar sesión", "email": "Correo", "password": "Contraseña", "error": "Credenciales inválidas", "logout": "Salir" },
+  "nav": { "timeline": "Diario", "add": "Agregar", "plan": "Mi plan" },
+  "category": { "Breakfast": "Desayuno", "AM Snack": "Snack AM", "Lunch": "Almuerzo", "PM Snack": "Snack PM", "Dinner": "Cena", "Supplement": "Suplemento" },
+  "entry": { "new": "Nueva entrada", "photos": "Fotos", "addPhotos": "Agregar fotos", "time": "Hora", "type": "Tipo de comida", "compliance": "¿Cumple el plan?", "description": "Descripción", "symptoms": "Tuve molestias digestivas", "symptomsDesc": "Describe los síntomas", "save": "Guardar entrada", "detail": "Detalle", "noEntries": "Sin entradas todavía", "comments": "Comentarios del coach", "noComments": "Sin comentarios", "delete": "Eliminar" },
+  "compliance": { "yes": "Sí", "no": "No", "na": "N/A" },
+  "plan": { "title": "Mi plan", "today": "Hoy", "none": "Aún no tienes un plan asignado", "week": "Semana" },
+  "coach": { "clients": "Clientes", "invite": "Invitar cliente", "inviteEmail": "Correo del cliente", "send": "Enviar invitación", "metrics": "Métricas", "totalEntries": "Entradas", "compliancePct": "% Cumplimiento", "symptomDays": "Días con síntomas", "plan": "Plan", "editPlan": "Editar plan", "addComment": "Agregar comentario", "confirm": "Confirmar cumplimiento", "addItem": "Agregar comida", "newPlan": "Nuevo plan" },
+  "common": { "back": "Atrás", "loading": "Cargando…", "cancel": "Cancelar" }
+}

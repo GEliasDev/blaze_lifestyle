@@ -1,1 +1,10 @@
-{ "auth": { "login": "Log in", "email": "Email", "password": "Password" } }
+{
+  "auth": { "login": "Log in", "email": "Email", "password": "Password", "error": "Invalid credentials", "logout": "Log out" },
+  "nav": { "timeline": "Journal", "add": "Add", "plan": "My plan" },
+  "category": { "Breakfast": "Breakfast", "AM Snack": "AM Snack", "Lunch": "Lunch", "PM Snack": "PM Snack", "Dinner": "Dinner", "Supplement": "Supplement" },
+  "entry": { "new": "New entry", "photos": "Photos", "addPhotos": "Add photos", "time": "Time", "type": "Meal type", "compliance": "Follows the plan?", "description": "Description", "symptoms": "I had digestive discomfort", "symptomsDesc": "Describe symptoms", "save": "Save entry", "detail": "Detail", "noEntries": "No entries yet", "comments": "Coach comments", "noComments": "No comments", "delete": "Delete" },
+  "compliance": { "yes": "Yes", "no": "No", "na": "N/A" },
+  "plan": { "title": "My plan", "today": "Today", "none": "No plan assigned yet", "week": "Week" },
+  "coach": { "clients": "Clients", "invite": "Invite client", "inviteEmail": "Client email", "send": "Send invitation", "metrics": "Metrics", "totalEntries": "Entries", "compliancePct": "Compliance %", "symptomDays": "Symptom days", "plan": "Plan", "editPlan": "Edit plan", "addComment": "Add comment", "confirm": "Confirm compliance", "addItem": "Add meal", "newPlan": "New plan" },
+  "common": { "back": "Back", "loading": "Loading…", "cancel": "Cancel" }
+}
