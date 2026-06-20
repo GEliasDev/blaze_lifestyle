@@ -5,7 +5,7 @@ import { RegisterScreen } from "../features/auth/RegisterScreen.jsx";
 import { BottomNav } from "../components/BottomNav.jsx";
 import { CoachLayout } from "../features/coach/CoachLayout.jsx";
 import { TimelineScreen } from "../features/nutrition/TimelineScreen.jsx";
-import { AddEntryScreen } from "../features/nutrition/AddEntryScreen.jsx";
+import { EvidenceScreen } from "../features/nutrition/EvidenceScreen.jsx";
 import { EntryDetailScreen } from "../features/nutrition/EntryDetailScreen.jsx";
 import { MyPlanScreen } from "../features/nutrition/MyPlanScreen.jsx";
 import { ClientsScreen } from "../features/coach/ClientsScreen.jsx";
@@ -48,7 +48,7 @@ export const routes = [
         element: <ClientShell />,
         children: [
           { path: "/home", element: <TimelineScreen /> },
-          { path: "/add", element: <AddEntryScreen /> },
+          { path: "/evidence/:itemId", element: <EvidenceScreen /> },
           { path: "/entry/:id", element: <EntryDetailScreen /> },
           { path: "/plan", element: <MyPlanScreen /> },
           { path: "/settings", element: <SettingsScreen /> },

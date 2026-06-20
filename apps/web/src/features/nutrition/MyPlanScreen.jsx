@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { Camera, Check } from "lucide-react";
 import { api } from "../../lib/api.js";
 import { AppHeader } from "../../components/AppHeader.jsx";
 import { Spinner } from "../../components/Spinner.jsx";
 
 const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-const CATEGORIES = ["Breakfast", "AM Snack", "Lunch", "PM Snack", "Dinner", "Supplement"];
 
 export function MyPlanScreen() {
   const { t } = useTranslation();
@@ -28,11 +29,23 @@ export function MyPlanScreen() {
           <div className="space-y-2">
             {today.length === 0 && <p className="text-ink/50 text-sm">—</p>}
             {today.map((r) => (
-              <div key={r.itemId} className="border-2 border-primary p-3">
-                <div className="font-heading uppercase text-xs text-ink/60">{t(`category.${r.category}`)}</div>
-                <div className="font-medium">{r.title}</div>
-                {r.notes && <div className="text-sm text-ink/60">{r.notes}</div>}
-              </div>
+              r.loggedEntryId ? (
+                <Link key={r.itemId} to={`/entry/${r.loggedEntryId}`} className="flex items-center justify-between border-2 border-success p-3">
+                  <div>
+                    <div className="font-heading uppercase text-xs text-ink/60">{t(`category.${r.category}`)}</div>
+                    <div className="font-medium">{r.title}</div>
+                  </div>
+                  <span className="flex items-center gap-1 text-success font-heading uppercase text-xs"><Check className="w-4 h-4" />{t("evidence.done")}</span>
+                </Link>
+              ) : (
+                <Link key={r.itemId} to={`/evidence/${r.itemId}`} state={{ category: r.category, title: r.title }} className="flex items-center justify-between border-2 border-primary p-3">
+                  <div>
+                    <div className="font-heading uppercase text-xs text-ink/60">{t(`category.${r.category}`)}</div>
+                    <div className="font-medium">{r.title}</div>
+                  </div>
+                  <span className="flex items-center gap-1 text-primary font-heading uppercase text-xs"><Camera className="w-4 h-4" />{t("evidence.upload")}</span>
+                </Link>
+              )
             ))}
           </div>
         </section>
