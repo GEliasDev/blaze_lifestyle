@@ -37,7 +37,9 @@ export const coachingService = {
     const total = entries.length;
     const onPlan = entries.filter((e) => e.planItemId != null);
     const compliant = onPlan.filter((e) => effective(e) === "yes").length;
-    const symptomDays = new Set(entries.filter((e) => e.hasSymptoms).map((e) => String(e.eatenAt).slice(0, 10))).size;
+    const symptomDays = new Set(
+      entries.filter((e) => e.hasSymptoms).map((e) => new Date(e.eatenAt).toISOString().slice(0, 10)),
+    ).size;
     const client = await UserModel.findByPk(clientId);
     return {
       id: client.id, name: client.name, email: client.email,

@@ -43,6 +43,8 @@ describe("coaching", () => {
 
     const metrics = await request(app).get(`/api/coach/clients/${clientId}`).set("Authorization", `Bearer ${coachToken}`);
     expect(metrics.body.metrics.totalEntries).toBe(1);
+    expect(metrics.body.metrics.compliancePct).toBeNull();
+    expect(metrics.body.metrics.symptomDays).toBe(0);
 
     // client sees the coach comment on the entry detail
     const detail = await request(app).get(`/api/me/entries/${entryId}`).set("Authorization", `Bearer ${clientToken}`);
