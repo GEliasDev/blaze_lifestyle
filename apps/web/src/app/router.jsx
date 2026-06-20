@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../lib/auth.jsx";
 import { LoginScreen } from "../features/auth/LoginScreen.jsx";
+import { RegisterScreen } from "../features/auth/RegisterScreen.jsx";
 import { BottomNav } from "../components/BottomNav.jsx";
 import { CoachLayout } from "../features/coach/CoachLayout.jsx";
 import { TimelineScreen } from "../features/nutrition/TimelineScreen.jsx";
@@ -37,6 +38,7 @@ function ClientShell() {
 
 export const routes = [
   { path: "/login", element: <LoginScreen /> },
+  { path: "/register", element: <RegisterScreen /> },
   { path: "/", element: <RoleHome /> },
   {
     element: <RequireRole role="client" />,

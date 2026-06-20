@@ -9,19 +9,20 @@ export function AuthProvider({ children }) {
     return raw ? JSON.parse(raw) : null;
   });
 
-  async function login(email, password) {
-    const res = await api.post("/auth/login", { email, password });
+  async function persist(res) {
     localStorage.setItem("accessToken", res.accessToken);
     localStorage.setItem("refreshToken", res.refreshToken);
     localStorage.setItem("user", JSON.stringify(res.user));
     setUser(res.user);
     return res.user;
   }
+  async function login(email, password) { return persist(await api.post("/auth/login", { email, password })); }
+  async function register(payload) { return persist(await api.post("/auth/register", payload)); }
   function logout() {
     ["accessToken", "refreshToken", "user"].forEach((k) => localStorage.removeItem(k));
     setUser(null);
   }
-  return <Ctx.Provider value={{ user, login, logout }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ user, login, register, logout }}>{children}</Ctx.Provider>;
 }
 
 export function useAuth() {

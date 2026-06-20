@@ -40,6 +40,7 @@ export function LoginScreen() {
       </label>
       {error && <p role="alert" className="text-danger">{error}</p>}
       <Button type="submit" variant="primary" className="w-full">{t("auth.login")}</Button>
+      <button type="button" onClick={() => navigate("/register")} className="w-full text-sm text-ink/70 underline">{t("register.noAccount")}</button>
     </form>
   );
 }

@@ -6,5 +6,6 @@
   "compliance": { "yes": "Yes", "no": "No", "na": "N/A" },
   "plan": { "title": "My plan", "today": "Today", "none": "No plan assigned yet", "week": "Week" },
   "coach": { "clients": "Clients", "invite": "Invite client", "inviteEmail": "Client email", "send": "Send invitation", "metrics": "Metrics", "totalEntries": "Entries", "compliancePct": "Compliance %", "symptomDays": "Symptom days", "plan": "Plan", "editPlan": "Edit plan", "addComment": "Add comment", "confirm": "Confirm compliance", "addItem": "Add meal", "newPlan": "New plan" },
+  "register": { "title": "Create account", "name": "Name", "role": "Account type", "asClient": "Client", "asCoach": "Coach", "coachCode": "Coach code (optional)", "submit": "Sign up", "haveAccount": "Already have an account? Log in", "noAccount": "No account? Sign up", "yourCode": "Your coach code", "shareCode": "Share it with your clients so they can link to you.", "continue": "Continue" },
   "common": { "back": "Back", "loading": "Loading…", "cancel": "Cancel" }
 }
