@@ -12,6 +12,7 @@ import { ClientsScreen } from "../features/coach/ClientsScreen.jsx";
 import { ClientDetailScreen } from "../features/coach/ClientDetailScreen.jsx";
 import { PlanEditorScreen } from "../features/coach/PlanEditorScreen.jsx";
 import { CoachEntryScreen } from "../features/coach/CoachEntryScreen.jsx";
+import { SettingsScreen } from "../features/account/SettingsScreen.jsx";
 
 function RequireRole({ role }) {
   const { user } = useAuth();
@@ -50,6 +51,7 @@ export const routes = [
           { path: "/add", element: <AddEntryScreen /> },
           { path: "/entry/:id", element: <EntryDetailScreen /> },
           { path: "/plan", element: <MyPlanScreen /> },
+          { path: "/settings", element: <SettingsScreen /> },
         ],
       },
     ],

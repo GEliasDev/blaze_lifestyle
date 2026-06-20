@@ -5,9 +5,10 @@ import "../../lib/i18n.js";
 vi.mock("../../lib/api.js", () => ({
   api: { get: vi.fn().mockResolvedValue([{ id: "u1", name: "Ana", email: "ana@x.com", totalEntries: 3 }]), post: vi.fn() },
 }));
+import { AuthProvider } from "../../lib/auth.jsx";
 import { ClientsScreen } from "./ClientsScreen.jsx";
 
 it("lists clients from the API", async () => {
-  render(<MemoryRouter><ClientsScreen /></MemoryRouter>);
+  render(<MemoryRouter><AuthProvider><ClientsScreen /></AuthProvider></MemoryRouter>);
   await waitFor(() => expect(screen.getByText("Ana")).toBeInTheDocument());
 });
