@@ -1,12 +1,11 @@
 {
-  "name": "@blaze/api",
+  "name": "blaze-servidor",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "node --watch src/server.js"
   },
   "dependencies": {
-    "@blaze/shared": "*",
     "express": "^4.19.2",
     "sequelize": "^6.37.3",
     "pg": "^8.12.0",

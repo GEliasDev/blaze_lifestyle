@@ -1,6 +1,6 @@
 import { DataTypes, Model } from "sequelize";
 import { sequelize } from "../../lib/db.js";
-import { MEAL_CATEGORIES, COMPLIANCE } from "@blaze/shared";
+import { MEAL_CATEGORIES, COMPLIANCE } from "../../shared/index.js";
 
 // Free-form meal log: the client chooses the category and the meal-guide
 // compliance themselves (no assigned plan in this flow). Description and

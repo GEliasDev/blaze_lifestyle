@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MEAL_CATEGORIES, COMPLIANCE } from "@blaze/shared";
+import { MEAL_CATEGORIES, COMPLIANCE } from "../../shared/index.js";
 
 export const createEntrySchema = z.object({
   category: z.enum(MEAL_CATEGORIES),

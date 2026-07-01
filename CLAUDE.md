@@ -12,14 +12,15 @@ app for logging meals, plus a responsive coach panel for reviewing clients. Futu
   `.js` for Node, `.jsx` for React components. Node ESM imports use explicit file extensions.
 - **Frontend:** React + Vite + Tailwind CSS + React Router + react-i18next. PWA (installable).
 - **Backend:** Node + Express, Sequelize ORM over **PostgreSQL**, Zod validation, JWT auth.
-- **Photos:** pluggable storage in `apps/api/src/lib/storage.js` — **local disk** (`apps/api/uploads/`, gitignored) when `R2_ENDPOINT` is empty (dev default), **Cloudflare R2** (S3-compatible) when configured. Same interface either way; thumbnails via `sharp`; served through an authenticated proxy (`GET /api/photos/:key`).
+- **Photos:** pluggable storage in `servidor/src/lib/storage.js` — **local disk** (`servidor/uploads/`, gitignored) when `R2_ENDPOINT` is empty (dev default), **Cloudflare R2** (S3-compatible) when configured. Same interface either way; thumbnails via `sharp`; served through an authenticated proxy (`GET /api/photos/:key`).
 - **LAN/phone dev:** web api base derives from `window.location.hostname:4000`; Vite `server.host=true`; API CORS reflects request origin in dev. Open `http://<PC-LAN-IP>:5173` on the phone.
-- **Monorepo:** workspaces — `apps/web`, `apps/api`, `packages/shared`. Shared package exports
-  enums/constants + Zod schemas (runtime validation shared by both apps).
+- **Two standalone projects** (no monorepo): `cliente/` (frontend) and `servidor/` (backend), each
+  with its own `package.json` and `node_modules` — run `npm install` / `npm run dev` inside each.
+  Shared enums/constants + Zod schemas live in `servidor/src/shared/` (the client keeps its own copies).
 
 ## Backend conventions
 
-- Organize the API by **modules** under `apps/api/src/modules/<name>/`. Every module follows this layering:
+- Organize the API by **modules** under `servidor/src/modules/<name>/`. Every module follows this layering:
   - `<name>.model.js` — Sequelize model (maps to a PostgreSQL table)
   - `<name>.schema.js` — Zod schemas (validate request input + response shape)
   - `<name>.service.js` — business logic only; **no `req`/`res`** here
@@ -32,8 +33,8 @@ app for logging meals, plus a responsive coach panel for reviewing clients. Futu
 
 ## Frontend conventions
 
-- Feature-first folders under `apps/web/src/features/` (`auth`, `nutrition`, `coach`).
-- Reusable design-system primitives live in `apps/web/src/components/`. Do not re-inline mockup markup.
+- Feature-first folders under `cliente/src/features/` (`auth`, `nutrition`, `coach`).
+- Reusable design-system primitives live in `cliente/src/components/`. Do not re-inline mockup markup.
 - **One frontend, two roles.** After login, the user's `role` selects the route tree and layout.
   - Client = mobile-first; on desktop a centered ~430px column (no fake phone frame).
   - Coach = responsive; desktop ≥1024px uses master–detail (clients sidebar + content).
