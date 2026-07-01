@@ -1,4 +1,5 @@
 import { ZodError } from "zod";
+import { logger } from "../lib/logger.js";
 
 export class HttpError extends Error {
   constructor(status, message) {
@@ -14,6 +15,6 @@ export function errorHandler(err, _req, res, _next) {
   if (err instanceof HttpError) {
     return res.status(err.status).json({ error: err.message });
   }
-  console.error(err);
+  logger.error(err);
   return res.status(500).json({ error: "InternalServerError" });
 }

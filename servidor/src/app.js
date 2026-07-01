@@ -1,7 +1,11 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
+import pinoHttp from "pino-http";
 import { config } from "./config.js";
 import { errorHandler } from "./middleware/error.js";
+import { generalLimiter } from "./middleware/rateLimit.js";
+import { logger } from "./lib/logger.js";
 import { authRouter } from "./modules/auth/auth.route.js";
 import { clientEntriesRouter, coachEntriesRouter, photosRouter } from "./modules/nutrition/nutrition.route.js";
 import { coachingRouter } from "./modules/coaching/coaching.route.js";
@@ -9,11 +13,13 @@ import { accountRouter } from "./modules/account/account.route.js";
 
 export function createApp() {
   const app = express();
-  // Dev-permissive CORS: reflect the request origin so the app works from
-  // localhost and from a phone on the LAN. Lock this down to config.webOrigin
-  // for production deployments.
+
+  app.use(helmet({ contentSecurityPolicy: false }));
+  app.use(pinoHttp({ logger }));
   app.use(cors({ origin: true, credentials: true }));
   app.use(express.json());
+  app.use(generalLimiter);
+
   app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
   app.use("/api/auth", authRouter);
   app.use("/api/me", clientEntriesRouter);

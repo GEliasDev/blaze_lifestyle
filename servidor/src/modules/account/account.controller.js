@@ -9,4 +9,16 @@ export const accountController = {
     try { res.json(await accountService.linkCoach(req.user.sub, req.body.coachCode)); }
     catch (err) { next(err); }
   },
+  async getProfile(req, res, next) {
+    try { res.json(await accountService.getProfile(req.user.sub)); }
+    catch (err) { next(err); }
+  },
+  async updateProfile(req, res, next) {
+    try { res.json(await accountService.updateProfile(req.user.sub, req.body)); }
+    catch (err) { next(err); }
+  },
+  async changePassword(req, res, next) {
+    try { res.json(await accountService.changePassword(req.user.sub, req.body)); }
+    catch (err) { next(err); }
+  },
 };

@@ -12,6 +12,8 @@ app for logging meals, plus a responsive coach panel for reviewing clients. Futu
   `.js` for Node, `.jsx` for React components. Node ESM imports use explicit file extensions.
 - **Frontend:** React + Vite + Tailwind CSS + React Router + react-i18next. PWA (installable).
 - **Backend:** Node + Express, Sequelize ORM over **PostgreSQL**, Zod validation, JWT auth.
+- **Security:** Helmet (HTTP headers), express-rate-limit (auth endpoints: 20 req/15min, general: 100 req/min).
+- **Logging:** Pino structured logging with pino-http request logging.
 - **Photos:** pluggable storage in `servidor/src/lib/storage.js` — **local disk** (`servidor/uploads/`, gitignored) when `R2_ENDPOINT` is empty (dev default), **Cloudflare R2** (S3-compatible) when configured. Same interface either way; thumbnails via `sharp`; served through an authenticated proxy (`GET /api/photos/:key`).
 - **LAN/phone dev:** web api base derives from `window.location.hostname:4000`; Vite `server.host=true`; API CORS reflects request origin in dev. Open `http://<PC-LAN-IP>:5173` on the phone.
 - **Two standalone projects** (no monorepo): `cliente/` (frontend) and `servidor/` (backend), each
@@ -30,14 +32,18 @@ app for logging meals, plus a responsive coach panel for reviewing clients. Futu
 - **Authorization is enforced in two places:** route-level role guard (`client`/`coach`) AND
   service-level ownership check (client owns the entry / coach owns the client) on every data access.
 - Validate all input with Zod at the controller boundary before touching services.
+- **Rate limiting:** auth endpoints (login/register) limited to 20 requests per 15 minutes per IP.
+- **Logging:** use `logger` from `servidor/src/lib/logger.js` (Pino) instead of `console.log/error`.
 
 ## Frontend conventions
 
-- Feature-first folders under `cliente/src/features/` (`auth`, `nutrition`, `coach`).
+- Feature-first folders under `cliente/src/features/` (`auth`, `nutrition`, `coach`, `account`).
 - Reusable design-system primitives live in `cliente/src/components/`. Do not re-inline mockup markup.
 - **One frontend, two roles.** After login, the user's `role` selects the route tree and layout.
   - Client = mobile-first; on desktop a centered ~430px column (no fake phone frame).
   - Coach = responsive; desktop ≥1024px uses master–detail (clients sidebar + content).
+- **Error handling:** `ErrorBoundary` wraps the entire app; components use try/catch with user-facing error states.
+- **Loading states:** Use `Spinner` for inline loading, `ListSkeleton`/`EntrySkeleton` for content placeholders.
 
 ## Design system ("Blaze")
 
@@ -72,6 +78,56 @@ Tokens via Tailwind theme + CSS variables — never hardcode hex in components.
   no seeded coach. `users.coach_code` is set for coaches only and returned in the user payload.
 - Coach feedback is **one-way**: coach comments on an entry; client reads (marked read on open).
 - Deleting an entry **hard-deletes** the row, its photos, and the R2 objects.
+
+## API Endpoints
+
+### Auth (`/api/auth`)
+- `POST /login` — rate limited (20/15min)
+- `POST /register` — rate limited (20/15min)
+- `POST /refresh` — refresh access token
+
+### Client (`/api/me`)
+- `GET /entries` — list client's meal entries
+- `POST /entries` — create entry (multipart: photos + JSON)
+- `GET /entries/:id` — get entry detail
+- `PATCH /entries/:id` — update entry (multipart)
+- `DELETE /entries/:id` — hard-delete entry + photos
+- `GET /coach` — get linked coach info
+- `POST /coach` — link to coach (one-time)
+- `GET /profile` — get user profile
+- `PATCH /profile` — update name/email
+- `POST /change-password` — change password (requires current password)
+
+### Coach (`/api/coach`)
+- `GET /clients` — list coach's clients
+- `GET /clients/:clientId/metrics` — get client metrics (compliance %, symptom days, pending review)
+- `GET /clients/:clientId/entries` — list client's entries
+- `POST /clients/:clientId/entries` — create entry for client
+- `GET /clients/:clientId/entries/:id` — get entry detail
+- `PATCH /clients/:clientId/entries/:id` — update entry
+- `DELETE /clients/:clientId/entries/:id` — delete entry
+
+### Photos (`/api/photos`)
+- `GET /:prefix/:file` — authenticated photo proxy
+
+## Frontend Components
+
+### Design System (`cliente/src/components/`)
+- `Button.jsx` — primary/secondary variants, brutalist style
+- `AppHeader.jsx` — top bar with hamburger nav
+- `Spinner.jsx` — loading indicator with animation
+- `Skeleton.jsx` — content placeholder (EntrySkeleton, ListSkeleton)
+- `ErrorBoundary.jsx` — catch-all error handler
+- `AuthImage.jsx` — authenticated photo loader
+- `PhotoCarousel.jsx` — scroll-snap photo slider
+- `ClientSidebar.jsx` — desktop module navigation
+
+### Features
+- `auth/` — LoginScreen, RegisterScreen
+- `nutrition/` — NutritionLayout, NutritionScreen, AddMealScreen, EntryDetailScreen, EditEntryScreen
+- `coach/` — CoachLayout, CoachClientLayout, ClientsScreen
+- `account/` — SettingsScreen (coach link, profile, password)
+- `modules/` — ModulePlaceholder (future modules)
 
 ## Testing
 

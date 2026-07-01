@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Filter, Plus, AlertCircle, Clock } from "lucide-react";
+import { Filter, Plus, AlertCircle, Clock, UtensilsCrossed } from "lucide-react";
 import { api } from "../../lib/api.js";
 import { AppHeader } from "../../components/AppHeader.jsx";
-import { Spinner } from "../../components/Spinner.jsx";
+import { ListSkeleton } from "../../components/Skeleton.jsx";
 import { AuthImage } from "../../components/AuthImage.jsx";
 import { useNutritionScope } from "./useNutritionScope.js";
 
@@ -68,8 +68,11 @@ export function NutritionScreen({ refreshKey } = {}) {
       )}
 
       <div className="flex-1 overflow-y-auto bg-muted">
-        {!entries ? <Spinner /> : days.length === 0 ? (
-          <p className="p-8 text-center font-heading uppercase text-ink/50">{t("entry.noEntries")}</p>
+        {!entries ? <ListSkeleton /> : days.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-8 text-center">
+            <UtensilsCrossed className="w-12 h-12 text-ink/20 mb-4" />
+            <p className="font-heading uppercase text-ink/50">{t("entry.noEntries")}</p>
+          </div>
         ) : (
           days.map((d) => (
             <section key={d}>
