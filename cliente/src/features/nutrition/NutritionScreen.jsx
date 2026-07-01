@@ -19,7 +19,7 @@ export function NutritionScreen() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { id: activeId } = useParams();
-  const { apiBase, linkBase, isCoach, clientId } = useNutritionScope();
+  const { apiBase, linkBase, isCoach } = useNutritionScope();
   const [entries, setEntries] = useState(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [category, setCategory] = useState("");
@@ -42,7 +42,7 @@ export function NutritionScreen() {
 
   return (
     <>
-      <AppHeader title={t("module.nutrition").toUpperCase()} showBack={isCoach} backTo={isCoach ? `/coach/clients/${clientId}` : null} />
+      <AppHeader title={t("module.nutrition").toUpperCase()} showBack={isCoach} backTo={isCoach ? "/coach" : null} />
 
       {filterOpen && (
         <div className="bg-muted border-b-2 border-primary p-3 space-y-3">

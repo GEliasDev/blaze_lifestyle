@@ -10,7 +10,7 @@ import { AddMealScreen } from "../features/nutrition/AddMealScreen.jsx";
 import { EntryDetailScreen } from "../features/nutrition/EntryDetailScreen.jsx";
 import { EditEntryScreen } from "../features/nutrition/EditEntryScreen.jsx";
 import { ClientsScreen } from "../features/coach/ClientsScreen.jsx";
-import { ClientModulesScreen } from "../features/coach/ClientModulesScreen.jsx";
+import { CoachClientLayout } from "../features/coach/CoachClientLayout.jsx";
 import { SettingsScreen } from "../features/account/SettingsScreen.jsx";
 
 function RequireRole({ role }) {
@@ -75,17 +75,23 @@ export const routes = [
           { path: "/coach", element: <ClientsScreen /> },
         ],
       },
-      // Full-screen (outside CoachLayout): client modules sidebar, full width on mobile
-      { path: "/coach/clients/:id", element: <ClientModulesScreen /> },
-      // Coach managing a client's Nutrition module (reuses the client screens
-      // via :clientId scope; same master–detail layout on desktop)
+      // Coach reviewing one client. Desktop shows [module sidebar · list ·
+      // detail] in one view (CoachClientLayout mirrors the client's ClientShell);
+      // entering a client lands straight on nutrition, no separate module step.
       {
-        path: "/coach/clients/:clientId/nutrition",
-        element: <NutritionLayout />,
+        path: "/coach/clients/:clientId",
+        element: <CoachClientLayout />,
         children: [
-          { path: "add", element: <AddMealScreen /> },
-          { path: ":id", element: <EntryDetailScreen /> },
-          { path: ":id/edit", element: <EditEntryScreen /> },
+          { index: true, element: <Navigate to="nutrition" replace /> },
+          {
+            path: "nutrition",
+            element: <NutritionLayout />,
+            children: [
+              { path: "add", element: <AddMealScreen /> },
+              { path: ":id", element: <EntryDetailScreen /> },
+              { path: ":id/edit", element: <EditEntryScreen /> },
+            ],
+          },
         ],
       },
     ],
