@@ -8,6 +8,7 @@ import { Spinner } from "../../components/Spinner.jsx";
 import { Button } from "../../components/Button.jsx";
 import { AuthImage } from "../../components/AuthImage.jsx";
 import { useNutritionScope } from "./useNutritionScope.js";
+import { useNutritionListRefresh } from "./NutritionLayout.jsx";
 
 const CATEGORIES = ["Breakfast", "AM Snack", "Lunch", "PM Snack", "Dinner", "Supplement"];
 const COMPLIANCE = ["na", "yes", "no"];
@@ -22,6 +23,7 @@ export function EditEntryScreen() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { apiBase, linkBase } = useNutritionScope();
+  const refreshList = useNutritionListRefresh();
   const [entry, setEntry] = useState(null);
   const [form, setForm] = useState(null);
   const [kept, setKept] = useState([]);     // existing photos to keep
@@ -69,7 +71,7 @@ export function EditEntryScreen() {
     fd.append("symptomDescription", form.hasSymptoms ? form.symptomDescription : "");
     kept.forEach((p) => fd.append("keep", p.storageKey));
     newFiles.forEach((f) => fd.append("photos", f));
-    try { await api.patchForm(`${apiBase}/${id}`, fd); navigate(`${linkBase}/${id}`); }
+    try { await api.patchForm(`${apiBase}/${id}`, fd); refreshList(); navigate(`${linkBase}/${id}`); }
     finally { setSaving(false); }
   }
 

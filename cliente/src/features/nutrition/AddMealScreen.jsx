@@ -6,6 +6,7 @@ import { api } from "../../lib/api.js";
 import { AppHeader } from "../../components/AppHeader.jsx";
 import { Button } from "../../components/Button.jsx";
 import { useNutritionScope } from "./useNutritionScope.js";
+import { useNutritionListRefresh } from "./NutritionLayout.jsx";
 
 const CATEGORIES = ["Breakfast", "AM Snack", "Lunch", "PM Snack", "Dinner", "Supplement"];
 const COMPLIANCE = ["na", "yes", "no"];
@@ -19,6 +20,7 @@ export function AddMealScreen() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { apiBase, linkBase } = useNutritionScope();
+  const refreshList = useNutritionListRefresh();
   const [files, setFiles] = useState([]);
   const [date, setDate] = useState(today());
   const [category, setCategory] = useState("");
@@ -44,7 +46,7 @@ export function AddMealScreen() {
     form.append("compliance", compliance);
     if (description.trim()) form.append("description", description.trim());
     files.forEach((f) => form.append("photos", f));
-    try { await api.postForm(apiBase, form); navigate(linkBase); }
+    try { await api.postForm(apiBase, form); refreshList(); navigate(linkBase); }
     finally { setSaving(false); }
   }
 

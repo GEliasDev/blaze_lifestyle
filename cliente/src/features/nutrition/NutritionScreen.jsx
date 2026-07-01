@@ -15,7 +15,7 @@ const CATEGORIES = ["Breakfast", "AM Snack", "Lunch", "PM Snack", "Dinner", "Sup
 function dayKey(iso) { return new Date(iso).toLocaleDateString("en-CA"); }
 function timeOf(iso) { return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
 
-export function NutritionScreen() {
+export function NutritionScreen({ refreshKey } = {}) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { id: activeId } = useParams();
@@ -25,7 +25,10 @@ export function NutritionScreen() {
   const [category, setCategory] = useState("");
   const [symptomsOnly, setSymptomsOnly] = useState(false);
 
-  useEffect(() => { api.get(apiBase).then(setEntries).catch(() => setEntries([])); }, [apiBase]);
+  // refreshKey changes when add/edit/delete succeed elsewhere (see
+  // NutritionLayout) — this component stays mounted across those navigations
+  // for the desktop master–detail view, so it won't otherwise know to refetch.
+  useEffect(() => { api.get(apiBase).then(setEntries).catch(() => setEntries([])); }, [apiBase, refreshKey]);
 
   function formatDate(key) {
     const today = new Date().toLocaleDateString("en-CA");

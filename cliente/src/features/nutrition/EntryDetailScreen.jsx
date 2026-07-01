@@ -8,6 +8,7 @@ import { Spinner } from "../../components/Spinner.jsx";
 import { Button } from "../../components/Button.jsx";
 import { PhotoCarousel } from "../../components/PhotoCarousel.jsx";
 import { useNutritionScope } from "./useNutritionScope.js";
+import { useNutritionListRefresh } from "./NutritionLayout.jsx";
 
 const BADGE = {
   yes: { cls: "bg-success text-white", key: "meal.complianceYes" },
@@ -20,6 +21,7 @@ export function EntryDetailScreen() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { apiBase, linkBase } = useNutritionScope();
+  const refreshList = useNutritionListRefresh();
   const [entry, setEntry] = useState(null);
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -28,7 +30,7 @@ export function EntryDetailScreen() {
 
   async function onDelete() {
     setDeleting(true);
-    try { await api.del(`${apiBase}/${id}`); navigate(linkBase); }
+    try { await api.del(`${apiBase}/${id}`); refreshList(); navigate(linkBase); }
     finally { setDeleting(false); }
   }
 
