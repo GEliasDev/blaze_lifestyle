@@ -1,0 +1,13 @@
+{
+  "name": "blaze-lifestyle",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n cliente,servidor -c cyan,magenta \"npm --prefix cliente run dev\" \"npm --prefix servidor run dev\"",
+    "dev:cliente": "npm --prefix cliente run dev",
+    "dev:servidor": "npm --prefix servidor run dev",
+    "install:all": "npm install && npm --prefix cliente install && npm --prefix servidor install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
