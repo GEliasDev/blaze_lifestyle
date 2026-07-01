@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Filter, Plus, AlertCircle, Clock } from "lucide-react";
 import { api } from "../../lib/api.js";
@@ -18,6 +18,7 @@ function timeOf(iso) { return new Date(iso).toLocaleTimeString([], { hour: "2-di
 export function NutritionScreen() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { id: activeId } = useParams();
   const { apiBase, linkBase, isCoach, clientId } = useNutritionScope();
   const [entries, setEntries] = useState(null);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -72,7 +73,7 @@ export function NutritionScreen() {
               <h2 className="sticky top-0 z-10 bg-ink/90 text-white px-4 py-2 font-heading uppercase tracking-wide text-sm">{formatDate(d)}</h2>
               <div className="p-3 space-y-3">
                 {filtered.filter((e) => dayKey(e.eatenAt) === d).map((e) => (
-                  <Link key={e.id} to={`${linkBase}/${e.id}`} className="flex gap-3 bg-white border-2 border-border p-3 hover:border-primary">
+                  <Link key={e.id} to={`${linkBase}/${e.id}`} className={`flex gap-3 bg-white border-2 p-3 hover:border-primary ${e.id === activeId ? "border-primary" : "border-border"}`}>
                     <div className="relative w-20 h-20 shrink-0">
                       {e.photos?.[0]
                         ? <AuthImage path={`/photos/${e.photos[0].thumbKey}`} className="w-20 h-20 object-cover border-2 border-border" />

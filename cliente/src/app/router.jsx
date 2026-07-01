@@ -3,8 +3,9 @@ import { useAuth } from "../lib/auth.jsx";
 import { LoginScreen } from "../features/auth/LoginScreen.jsx";
 import { RegisterScreen } from "../features/auth/RegisterScreen.jsx";
 import { CoachLayout } from "../features/coach/CoachLayout.jsx";
+import { ClientSidebar } from "../components/ClientSidebar.jsx";
 import { ModulePlaceholder } from "../features/modules/ModulePlaceholder.jsx";
-import { NutritionScreen } from "../features/nutrition/NutritionScreen.jsx";
+import { NutritionLayout } from "../features/nutrition/NutritionLayout.jsx";
 import { AddMealScreen } from "../features/nutrition/AddMealScreen.jsx";
 import { EntryDetailScreen } from "../features/nutrition/EntryDetailScreen.jsx";
 import { EditEntryScreen } from "../features/nutrition/EditEntryScreen.jsx";
@@ -25,11 +26,15 @@ function RoleHome() {
   return <Navigate to={user.role === "coach" ? "/coach" : "/nutrition"} replace />;
 }
 
-// Client shell: centered mobile column; navigation lives in the header menu
+// Client shell. Mobile: centered column, navigation via the header hamburger.
+// Desktop (lg+): persistent module sidebar on the left + content on the right.
 function ClientShell() {
   return (
-    <div className="mx-auto max-w-[480px] min-h-dvh flex flex-col bg-white">
-      <div className="flex-1 flex flex-col"><Outlet /></div>
+    <div className="min-h-dvh bg-white lg:grid lg:grid-cols-[220px_1fr]">
+      <ClientSidebar />
+      <div className="min-w-0 flex flex-col min-h-dvh mx-auto w-full max-w-[480px] lg:max-w-none lg:mx-0">
+        <Outlet />
+      </div>
     </div>
   );
 }
@@ -44,10 +49,15 @@ export const routes = [
       {
         element: <ClientShell />,
         children: [
-          { path: "/nutrition", element: <NutritionScreen /> },
-          { path: "/nutrition/add", element: <AddMealScreen /> },
-          { path: "/nutrition/:id", element: <EntryDetailScreen /> },
-          { path: "/nutrition/:id/edit", element: <EditEntryScreen /> },
+          {
+            path: "/nutrition",
+            element: <NutritionLayout />,
+            children: [
+              { path: "add", element: <AddMealScreen /> },
+              { path: ":id", element: <EntryDetailScreen /> },
+              { path: ":id/edit", element: <EditEntryScreen /> },
+            ],
+          },
           { path: "/exercise", element: <ModulePlaceholder titleKey="module.exercise" /> },
           { path: "/sleep", element: <ModulePlaceholder titleKey="module.sleep" /> },
           { path: "/body-comp", element: <ModulePlaceholder titleKey="module.bodyComp" /> },
@@ -67,11 +77,17 @@ export const routes = [
       },
       // Full-screen (outside CoachLayout): client modules sidebar, full width on mobile
       { path: "/coach/clients/:id", element: <ClientModulesScreen /> },
-      // Coach managing a client's Nutrition module (reuses the client screens via :clientId scope)
-      { path: "/coach/clients/:clientId/nutrition", element: <NutritionScreen /> },
-      { path: "/coach/clients/:clientId/nutrition/add", element: <AddMealScreen /> },
-      { path: "/coach/clients/:clientId/nutrition/:id", element: <EntryDetailScreen /> },
-      { path: "/coach/clients/:clientId/nutrition/:id/edit", element: <EditEntryScreen /> },
+      // Coach managing a client's Nutrition module (reuses the client screens
+      // via :clientId scope; same master–detail layout on desktop)
+      {
+        path: "/coach/clients/:clientId/nutrition",
+        element: <NutritionLayout />,
+        children: [
+          { path: "add", element: <AddMealScreen /> },
+          { path: ":id", element: <EntryDetailScreen /> },
+          { path: ":id/edit", element: <EditEntryScreen /> },
+        ],
+      },
     ],
   },
 ];

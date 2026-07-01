@@ -26,7 +26,8 @@ export function AppHeader({ title, showBack = false, backTo = null, action = nul
 
   return (
     <header className="bg-ink text-white">
-      <div className="flex items-center gap-2 p-4">
+      {/* Mobile: full bar with hamburger + branding. */}
+      <div className="flex items-center gap-2 p-4 lg:hidden">
         {showBack ? (
           <button onClick={() => (backTo ? navigate(backTo) : navigate(-1))} aria-label={t("common.back")} className="min-h-[44px] min-w-[44px] flex items-center justify-center -ml-2">
             <ChevronLeft className="w-6 h-6" />
@@ -40,6 +41,17 @@ export function AppHeader({ title, showBack = false, backTo = null, action = nul
           <div className="font-heading font-bold tracking-wide text-lg">BLAZE LIFESTYLE</div>
           <div className="text-white/60 text-xs tracking-wide">{title ?? "NUTRITION TRACKER"}</div>
         </div>
+        {action}
+      </div>
+
+      {/* Desktop: compact pane header — module navigation lives in the sidebar. */}
+      <div className="hidden lg:flex items-center gap-3 px-4 h-14 border-b-2 border-white/10">
+        {showBack && (
+          <button onClick={() => (backTo ? navigate(backTo) : navigate(-1))} aria-label={t("common.back")} className="min-h-[44px] min-w-[44px] flex items-center justify-center -ml-2">
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+        )}
+        <div className="flex-1 min-w-0 font-heading font-bold tracking-wide uppercase text-lg truncate">{title ?? "NUTRITION TRACKER"}</div>
         {action}
       </div>
 
