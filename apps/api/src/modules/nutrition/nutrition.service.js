@@ -1,71 +1,102 @@
 import { MealEntryModel } from "./mealEntry.model.js";
 import { MealPhotoModel } from "./mealPhoto.model.js";
 import { CoachClientModel } from "../coaching/coachClients.model.js";
-import { MealPlanItemModel } from "../mealplans/mealPlanItem.model.js";
-import { MealPlanModel } from "../mealplans/mealPlan.model.js";
 import { buildKey, makeThumbnail, putObject, deleteObject } from "../../lib/storage.js";
+import { editEntrySchema, MAX_PHOTOS } from "./nutrition.schema.js";
 import { HttpError } from "../../middleware/error.js";
 
 function serialize(entry, photos) {
   return {
-    id: entry.id, clientId: entry.clientId, planItemId: entry.planItemId, category: entry.category,
-    description: entry.description, eatenAt: entry.eatenAt, hasSymptoms: entry.hasSymptoms,
-    symptomDescription: entry.symptomDescription, clientCompliance: entry.clientCompliance,
-    coachCompliance: entry.coachCompliance,
+    id: entry.id, clientId: entry.clientId, category: entry.category,
+    eatenAt: entry.eatenAt, compliance: entry.compliance,
+    description: entry.description, hasSymptoms: entry.hasSymptoms, symptomDescription: entry.symptomDescription,
     photos: photos.map((p) => ({ storageKey: p.storageKey, thumbKey: p.thumbKey, position: p.position })),
   };
 }
 
+async function photosFor(entryId) {
+  return MealPhotoModel.findAll({ where: { entryId }, order: [["position", "ASC"]] });
+}
+
+async function addPhotos(entryId, files, startPos = 0) {
+  for (let i = 0; i < (files?.length ?? 0); i++) {
+    const full = buildKey("meals", "jpg");
+    const thumb = buildKey("thumbs", "jpg");
+    await putObject(full, files[i].buffer, files[i].mimetype);
+    await putObject(thumb, await makeThumbnail(files[i].buffer), "image/jpeg");
+    await MealPhotoModel.create({ entryId, storageKey: full, thumbKey: thumb, position: startPos + i });
+  }
+}
+
+async function ownedEntry(clientId, id) {
+  const entry = await MealEntryModel.findByPk(id);
+  if (!entry || entry.clientId !== clientId) throw new HttpError(404, "Entry not found");
+  return entry;
+}
+
 export const nutritionService = {
   async createEntry(clientId, data, files) {
-    if (!files || files.length === 0) throw new HttpError(400, "At least one photo is required");
-    const item = await MealPlanItemModel.findByPk(data.planItemId);
-    if (!item) throw new HttpError(404, "Plan item not found");
-    const plan = await MealPlanModel.findByPk(item.planId);
-    if (!plan || plan.clientId !== clientId || !plan.active) throw new HttpError(403, "Not your assigned meal");
+    if ((files?.length ?? 0) > MAX_PHOTOS) throw new HttpError(400, `A meal can have at most ${MAX_PHOTOS} photos`);
     const entry = await MealEntryModel.create({
-      clientId, planItemId: item.id, category: item.category,
+      clientId,
+      category: data.category,
       eatenAt: data.eatenAt ?? new Date(),
-      hasSymptoms: data.hasSymptoms ?? false,
-      symptomDescription: data.symptomDescription ?? null,
-      clientCompliance: "na",
+      compliance: data.compliance ?? "na",
+      description: data.description ?? null,
     });
-    const photos = [];
-    for (let i = 0; i < files.length; i++) {
-      const full = buildKey("meals", "jpg");
-      const thumb = buildKey("thumbs", "jpg");
-      await putObject(full, files[i].buffer, files[i].mimetype);
-      await putObject(thumb, await makeThumbnail(files[i].buffer), "image/jpeg");
-      photos.push(await MealPhotoModel.create({ entryId: entry.id, storageKey: full, thumbKey: thumb, position: i }));
-    }
-    return serialize(entry, photos);
+    await addPhotos(entry.id, files, 0);
+    return serialize(entry, await photosFor(entry.id));
   },
 
-  async listEntries(clientId, filters = {}) {
-    const where = { clientId };
-    if (filters.category) where.category = filters.category;
-    if (filters.hasSymptoms === "true") where.hasSymptoms = true;
-    if (filters.clientCompliance) where.clientCompliance = filters.clientCompliance;
-    const entries = await MealEntryModel.findAll({ where, order: [["eaten_at", "DESC"]] });
+  async listEntries(clientId) {
+    const entries = await MealEntryModel.findAll({ where: { clientId }, order: [["eaten_at", "DESC"]] });
     const out = [];
-    for (const e of entries) {
-      const photos = await MealPhotoModel.findAll({ where: { entryId: e.id }, order: [["position", "ASC"]] });
-      out.push(serialize(e, photos));
-    }
+    for (const e of entries) out.push(serialize(e, await photosFor(e.id)));
     return out;
   },
 
-  async getEntryForOwner(clientId, id) {
-    const entry = await MealEntryModel.findByPk(id);
-    if (!entry || entry.clientId !== clientId) throw new HttpError(404, "Entry not found");
-    const photos = await MealPhotoModel.findAll({ where: { entryId: id }, order: [["position", "ASC"]] });
-    return serialize(entry, photos);
+  async getEntry(clientId, id) {
+    const entry = await ownedEntry(clientId, id);
+    return serialize(entry, await photosFor(id));
   },
 
+  // Multipart edit: text fields in rawBody, new photos in files, storageKeys of
+  // existing photos to keep in keepKeys. Photos not kept are deleted; new ones
+  // are appended. Total is capped at MAX_PHOTOS.
+  async updateEntry(clientId, id, rawBody, files = [], keepKeys = []) {
+    const entry = await ownedEntry(clientId, id);
+    const data = editEntrySchema.parse(rawBody);
+    if (data.description === "") data.description = null;
+    if (data.hasSymptoms === false) data.symptomDescription = null;
+    else if (data.symptomDescription === "") data.symptomDescription = null;
+
+    const existing = await photosFor(id);
+    const keep = new Set(keepKeys);
+    const kept = existing.filter((p) => keep.has(p.storageKey));
+    const toDelete = existing.filter((p) => !keep.has(p.storageKey));
+    if (kept.length + (files?.length ?? 0) > MAX_PHOTOS) {
+      throw new HttpError(400, `A meal can have at most ${MAX_PHOTOS} photos`);
+    }
+
+    for (const p of toDelete) {
+      await deleteObject(p.storageKey);
+      await deleteObject(p.thumbKey);
+      await p.destroy();
+    }
+    // Reindex kept photos to a contiguous 0..n-1, then append the new ones.
+    for (let i = 0; i < kept.length; i++) {
+      if (kept[i].position !== i) await kept[i].update({ position: i });
+    }
+    await addPhotos(id, files, kept.length);
+
+    await entry.update(data);
+    return serialize(entry, await photosFor(id));
+  },
+
+  // Hard-delete: removes the entry row, its photo rows, and the stored objects.
   async deleteEntry(clientId, id) {
-    const entry = await MealEntryModel.findByPk(id);
-    if (!entry || entry.clientId !== clientId) throw new HttpError(404, "Entry not found");
-    const photos = await MealPhotoModel.findAll({ where: { entryId: id } });
+    const entry = await ownedEntry(clientId, id);
+    const photos = await photosFor(id);
     for (const p of photos) {
       await deleteObject(p.storageKey);
       await deleteObject(p.thumbKey);
@@ -74,15 +105,8 @@ export const nutritionService = {
     await entry.destroy();
   },
 
-  async getEntryWithComments(clientId, id) {
-    const base = await this.getEntryForOwner(clientId, id);
-    const { CoachCommentModel } = await import("../coaching/coachComment.model.js");
-    const comments = await CoachCommentModel.findAll({ where: { entryId: id }, order: [["created_at", "ASC"]] });
-    await CoachCommentModel.update({ readByClientAt: new Date() }, { where: { entryId: id, readByClientAt: null } });
-    return { ...base, comments: comments.map((c) => ({ id: c.id, body: c.body, createdAt: c.createdAt })) };
-  },
-
-  // Returns the storage key if the requester may read it, else throws.
+  // Returns the storage key if the requester may read it (the owning client, or
+  // a coach linked to the entry's client), else throws.
   async photoAccess(requester, key) {
     const photo = await MealPhotoModel.findOne({ where: { [key.startsWith("thumbs/") ? "thumbKey" : "storageKey"]: key } });
     if (!photo) throw new HttpError(404, "Photo not found");

@@ -3,8 +3,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/server.js",
-    "test": "vitest run"
+    "dev": "node --watch src/server.js"
   },
   "dependencies": {
     "@blaze/shared": "*",
@@ -20,9 +19,5 @@
     "@aws-sdk/client-s3": "^3.620.0",
     "dotenv": "^16.4.5",
     "cors": "^2.8.5"
-  },
-  "devDependencies": {
-    "vitest": "^2.0.0",
-    "supertest": "^7.0.0"
   }
 }

@@ -17,7 +17,7 @@ export function LoginScreen() {
     setError(null);
     try {
       const user = await login(email, password);
-      navigate(user.role === "coach" ? "/coach" : "/home");
+      navigate(user.role === "coach" ? "/coach" : "/nutrition");
     } catch {
       setError("error");
     }

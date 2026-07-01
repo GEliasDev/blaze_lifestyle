@@ -1,7 +1,7 @@
 import { UserModel } from "../users/users.model.js";
 import { CoachClientModel } from "../coaching/coachClients.model.js";
 import { verifyPassword, hashPassword } from "../../lib/password.js";
-import { signAccess, signRefresh } from "../../lib/jwt.js";
+import { signAccess, signRefresh, verifyRefresh } from "../../lib/jwt.js";
 import { uniqueCoachCode } from "../../lib/coachCode.js";
 import { HttpError } from "../../middleware/error.js";
 
@@ -36,6 +36,15 @@ export const authService = {
       coachCode: role === "coach" ? await uniqueCoachCode() : null,
     });
     if (coach) await CoachClientModel.create({ coachId: coach.id, clientId: user.id });
+    return tokensFor(user);
+  },
+
+  async refresh(refreshToken) {
+    let payload;
+    try { payload = verifyRefresh(refreshToken); }
+    catch { throw new HttpError(401, "Invalid refresh token"); }
+    const user = await UserModel.findByPk(payload.sub);
+    if (!user || !user.active) throw new HttpError(401, "Invalid refresh token");
     return tokensFor(user);
   },
 

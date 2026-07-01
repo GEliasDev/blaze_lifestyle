@@ -23,7 +23,7 @@ export function RegisterScreen() {
       if (form.role === "client" && form.coachCode) payload.coachCode = form.coachCode;
       const user = await register(payload);
       if (user.role === "coach") setCoachCode(user.coachCode);
-      else navigate("/home");
+      else navigate("/nutrition");
     } catch (err) {
       setError(err.message || "error");
     }

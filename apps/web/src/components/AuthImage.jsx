@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api.js";
 
-export function AuthImage({ path, alt = "", className = "" }) {
-  const [url, setUrl] = useState(null);
+// Photos are served through an authenticated proxy, so a plain <img src> can't
+// load them. We fetch the blob with the auth header and render an object URL.
+export function AuthImage({ path, alt = "", className }) {
+  const [src, setSrc] = useState(null);
   useEffect(() => {
-    let revoked = false;
-    let made = null;
-    api.blobUrl(path).then((u) => { if (!revoked) { made = u; setUrl(u); } }).catch(() => {});
-    return () => { revoked = true; if (made) URL.revokeObjectURL(made); };
+    let url;
+    let active = true;
+    api.blobUrl(path).then((u) => { url = u; if (active) setSrc(u); }).catch(() => {});
+    return () => { active = false; if (url) URL.revokeObjectURL(url); };
   }, [path]);
-  if (!url) return <div className={`bg-muted ${className}`} aria-label={alt} />;
-  return <img src={url} alt={alt} className={className} />;
+  return src
+    ? <img src={src} alt={alt} className={className} />
+    : <div className={`${className} bg-muted`} aria-hidden="true" />;
 }

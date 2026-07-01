@@ -10,5 +10,4 @@ export default defineConfig({
   // host: true exposes the dev server on the LAN (0.0.0.0) and prints a
   // "Network" URL you can open from your phone.
   server: { host: true },
-  test: { environment: "jsdom", globals: true, setupFiles: ["./src/test-setup.js"] },
 });

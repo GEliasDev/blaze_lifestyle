@@ -2,16 +2,14 @@ import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../lib/auth.jsx";
 import { LoginScreen } from "../features/auth/LoginScreen.jsx";
 import { RegisterScreen } from "../features/auth/RegisterScreen.jsx";
-import { BottomNav } from "../components/BottomNav.jsx";
 import { CoachLayout } from "../features/coach/CoachLayout.jsx";
-import { TimelineScreen } from "../features/nutrition/TimelineScreen.jsx";
-import { EvidenceScreen } from "../features/nutrition/EvidenceScreen.jsx";
+import { ModulePlaceholder } from "../features/modules/ModulePlaceholder.jsx";
+import { NutritionScreen } from "../features/nutrition/NutritionScreen.jsx";
+import { AddMealScreen } from "../features/nutrition/AddMealScreen.jsx";
 import { EntryDetailScreen } from "../features/nutrition/EntryDetailScreen.jsx";
-import { MyPlanScreen } from "../features/nutrition/MyPlanScreen.jsx";
+import { EditEntryScreen } from "../features/nutrition/EditEntryScreen.jsx";
 import { ClientsScreen } from "../features/coach/ClientsScreen.jsx";
-import { ClientDetailScreen } from "../features/coach/ClientDetailScreen.jsx";
-import { PlanEditorScreen } from "../features/coach/PlanEditorScreen.jsx";
-import { CoachEntryScreen } from "../features/coach/CoachEntryScreen.jsx";
+import { ClientModulesScreen } from "../features/coach/ClientModulesScreen.jsx";
 import { SettingsScreen } from "../features/account/SettingsScreen.jsx";
 
 function RequireRole({ role }) {
@@ -24,15 +22,14 @@ function RequireRole({ role }) {
 function RoleHome() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  return <Navigate to={user.role === "coach" ? "/coach" : "/home"} replace />;
+  return <Navigate to={user.role === "coach" ? "/coach" : "/nutrition"} replace />;
 }
 
-// Client shell: centered mobile column + bottom nav
+// Client shell: centered mobile column; navigation lives in the header menu
 function ClientShell() {
   return (
     <div className="mx-auto max-w-[480px] min-h-dvh flex flex-col bg-white">
       <div className="flex-1 flex flex-col"><Outlet /></div>
-      <BottomNav />
     </div>
   );
 }
@@ -47,10 +44,13 @@ export const routes = [
       {
         element: <ClientShell />,
         children: [
-          { path: "/home", element: <TimelineScreen /> },
-          { path: "/evidence/:itemId", element: <EvidenceScreen /> },
-          { path: "/entry/:id", element: <EntryDetailScreen /> },
-          { path: "/plan", element: <MyPlanScreen /> },
+          { path: "/nutrition", element: <NutritionScreen /> },
+          { path: "/nutrition/add", element: <AddMealScreen /> },
+          { path: "/nutrition/:id", element: <EntryDetailScreen /> },
+          { path: "/nutrition/:id/edit", element: <EditEntryScreen /> },
+          { path: "/exercise", element: <ModulePlaceholder titleKey="module.exercise" /> },
+          { path: "/sleep", element: <ModulePlaceholder titleKey="module.sleep" /> },
+          { path: "/body-comp", element: <ModulePlaceholder titleKey="module.bodyComp" /> },
           { path: "/settings", element: <SettingsScreen /> },
         ],
       },
@@ -63,11 +63,15 @@ export const routes = [
         element: <CoachLayout />,
         children: [
           { path: "/coach", element: <ClientsScreen /> },
-          { path: "/coach/clients/:id", element: <ClientDetailScreen /> },
-          { path: "/coach/clients/:id/plan", element: <PlanEditorScreen /> },
-          { path: "/coach/entries/:id", element: <CoachEntryScreen /> },
         ],
       },
+      // Full-screen (outside CoachLayout): client modules sidebar, full width on mobile
+      { path: "/coach/clients/:id", element: <ClientModulesScreen /> },
+      // Coach managing a client's Nutrition module (reuses the client screens via :clientId scope)
+      { path: "/coach/clients/:clientId/nutrition", element: <NutritionScreen /> },
+      { path: "/coach/clients/:clientId/nutrition/add", element: <AddMealScreen /> },
+      { path: "/coach/clients/:clientId/nutrition/:id", element: <EntryDetailScreen /> },
+      { path: "/coach/clients/:clientId/nutrition/:id/edit", element: <EditEntryScreen /> },
     ],
   },
 ];
