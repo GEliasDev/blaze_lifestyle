@@ -29,7 +29,7 @@ export function AddMealScreen() {
   const [saving, setSaving] = useState(false);
 
   const previews = files.map((f) => ({ f, url: URL.createObjectURL(f) }));
-  const canSave = category && date && !saving;
+  const canSave = category && date && description.trim() && !saving;
 
   // No time at creation — this plans a meal for a (possibly future) day. The
   // client sets the real time when they edit after eating. Noon local keeps the

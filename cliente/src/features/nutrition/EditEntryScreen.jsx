@@ -52,6 +52,7 @@ export function EditEntryScreen() {
 
   const newPreviews = newFiles.map((f) => ({ f, url: URL.createObjectURL(f) }));
   const total = kept.length + newFiles.length;
+  const canSave = form.category && form.description.trim() && !saving;
 
   function eatenAtISO() {
     const [h, m] = form.time.split(":");
@@ -155,7 +156,7 @@ export function EditEntryScreen() {
       </div>
 
       <div className="p-4 border-t-2 border-border flex gap-3">
-        <Button variant="primary" className="flex-1" disabled={saving} onClick={onSave}>{t("meal.saveChanges")}</Button>
+        <Button variant="primary" className="flex-1" disabled={!canSave} onClick={onSave}>{t("meal.saveChanges")}</Button>
         <Button variant="secondary" className="flex-1" onClick={() => navigate(`${linkBase}/${id}`)}>{t("common.cancel")}</Button>
       </div>
     </>
