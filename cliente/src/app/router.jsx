@@ -11,6 +11,7 @@ import { EntryDetailScreen } from "../features/nutrition/EntryDetailScreen.jsx";
 import { EditEntryScreen } from "../features/nutrition/EditEntryScreen.jsx";
 import { ClientsScreen } from "../features/coach/ClientsScreen.jsx";
 import { CoachClientLayout } from "../features/coach/CoachClientLayout.jsx";
+import { CoachClientHome } from "../features/coach/CoachClientHome.jsx";
 import { SettingsScreen } from "../features/account/SettingsScreen.jsx";
 
 function RequireRole({ role }) {
@@ -82,7 +83,7 @@ export const routes = [
         path: "/coach/clients/:clientId",
         element: <CoachClientLayout />,
         children: [
-          { index: true, element: <Navigate to="nutrition" replace /> },
+          { index: true, element: <CoachClientHome /> },
           {
             path: "nutrition",
             element: <NutritionLayout />,

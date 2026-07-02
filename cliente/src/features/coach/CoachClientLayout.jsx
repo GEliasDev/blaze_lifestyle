@@ -39,7 +39,7 @@ export function CoachClientLayout() {
           <div className={`${ROW} text-white/30`}><Scale className="w-5 h-5" />{t("module.bodyComp")}</div>
         </nav>
       </aside>
-      <div className="min-w-0"><Outlet /></div>
+      <div className="min-w-0"><Outlet context={client} /></div>
     </div>
   );
 }
