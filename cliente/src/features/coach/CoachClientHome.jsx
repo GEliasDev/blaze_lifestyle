@@ -12,7 +12,7 @@ const MODULES = [
 
 // Index route for a coach reviewing one client. On mobile this is the only
 // way to pick a module (CoachClientLayout's sidebar is desktop-only); on
-// desktop it renders in the content pane next to the already-visible sidebar.
+// desktop the sidebar already lists the modules, so this list stays hidden.
 export function CoachClientHome() {
   const client = useOutletContext();
   const { t } = useTranslation();
@@ -20,7 +20,7 @@ export function CoachClientHome() {
   return (
     <>
       <AppHeader title={client ? client.name.toUpperCase() : t("coach.client").toUpperCase()} showBack backTo="/coach" />
-      <div className="flex-1 p-3 space-y-3">
+      <div className="flex-1 p-3 space-y-3 lg:hidden">
         {MODULES.map(({ to, icon: Icon, key, enabled }) =>
           enabled ? (
             <Link
