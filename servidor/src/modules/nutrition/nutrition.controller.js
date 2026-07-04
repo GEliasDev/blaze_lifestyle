@@ -1,4 +1,5 @@
 import { nutritionService } from "./nutrition.service.js";
+import { listQuerySchema } from "./nutrition.schema.js";
 import { getObject } from "../../lib/storage.js";
 import { assertCoachOwnsClient } from "../../lib/ownership.js";
 
@@ -8,7 +9,7 @@ export const nutritionController = {
     catch (err) { next(err); }
   },
   async list(req, res, next) {
-    try { res.json(await nutritionService.listEntries(req.user.sub)); }
+    try { res.json(await nutritionService.listEntries(req.user.sub, listQuerySchema.parse(req.query))); }
     catch (err) { next(err); }
   },
   async get(req, res, next) {
@@ -41,7 +42,7 @@ export const coachNutritionController = {
   async list(req, res, next) {
     try {
       await assertCoachOwnsClient(req.user.sub, req.params.clientId);
-      res.json(await nutritionService.listEntries(req.params.clientId));
+      res.json(await nutritionService.listEntries(req.params.clientId, listQuerySchema.parse(req.query)));
     } catch (err) { next(err); }
   },
   async create(req, res, next) {

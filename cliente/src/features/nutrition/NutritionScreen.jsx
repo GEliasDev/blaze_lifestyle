@@ -9,11 +9,20 @@ import { AuthImage } from "../../components/AuthImage.jsx";
 import { useNutritionScope } from "./useNutritionScope.js";
 
 const CATEGORIES = ["Breakfast", "AM Snack", "Lunch", "PM Snack", "Dinner", "Supplement"];
+const DEFAULT_WINDOW_DAYS = 30;
 
 // Group by LOCAL calendar day (en-CA → YYYY-MM-DD) so meals near midnight
 // don't split across UTC day boundaries.
 function dayKey(iso) { return new Date(iso).toLocaleDateString("en-CA"); }
 function timeOf(iso) { return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+function todayKey() { return new Date().toLocaleDateString("en-CA"); }
+function daysBefore(dayStr, n) {
+  const d = new Date(`${dayStr}T00:00:00`);
+  d.setDate(d.getDate() - n);
+  return d.toLocaleDateString("en-CA");
+}
+function startOfDayISO(dayStr) { return new Date(`${dayStr}T00:00:00`).toISOString(); }
+function endOfDayISO(dayStr) { return new Date(`${dayStr}T23:59:59.999`).toISOString(); }
 
 export function NutritionScreen({ refreshKey } = {}) {
   const { t, i18n } = useTranslation();
@@ -27,11 +36,35 @@ export function NutritionScreen({ refreshKey } = {}) {
   const [mealGuideOnly, setMealGuideOnly] = useState(false);
   const [dayFrom, setDayFrom] = useState("");
   const [dayTo, setDayTo] = useState("");
+  // Rolling window used when no explicit date-range filter is set — avoids
+  // pulling a client's entire history (a year+ of daily logging) on every
+  // load. "Load more" pushes this back another DEFAULT_WINDOW_DAYS.
+  const [windowFrom, setWindowFrom] = useState(() => daysBefore(todayKey(), DEFAULT_WINDOW_DAYS - 1));
+  const [loadingMore, setLoadingMore] = useState(false);
+  const usingExplicitRange = Boolean(dayFrom || dayTo);
 
   // refreshKey changes when add/edit/delete succeed elsewhere (see
   // NutritionLayout) — this component stays mounted across those navigations
   // for the desktop master–detail view, so it won't otherwise know to refetch.
-  useEffect(() => { api.get(apiBase).then(setEntries).catch(() => setEntries([])); }, [apiBase, refreshKey]);
+  useEffect(() => {
+    const range = usingExplicitRange
+      ? { from: dayFrom ? startOfDayISO(dayFrom) : undefined, to: dayTo ? endOfDayISO(dayTo) : undefined }
+      : { from: startOfDayISO(windowFrom), to: endOfDayISO(todayKey()) };
+    const query = Object.fromEntries(Object.entries(range).filter(([, v]) => v));
+    api.get(apiBase, query).then(setEntries).catch(() => setEntries([]));
+  }, [apiBase, refreshKey, usingExplicitRange, dayFrom, dayTo, windowFrom]);
+
+  async function loadMore() {
+    setLoadingMore(true);
+    const nextFrom = daysBefore(windowFrom, DEFAULT_WINDOW_DAYS);
+    try {
+      const data = await api.get(apiBase, { from: startOfDayISO(nextFrom), to: endOfDayISO(todayKey()) });
+      setEntries(data);
+      setWindowFrom(nextFrom);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   function formatDate(key) {
     const today = new Date().toLocaleDateString("en-CA");
@@ -39,16 +72,16 @@ export function NutritionScreen({ refreshKey } = {}) {
     return new Date(`${key}T00:00:00`).toLocaleDateString(i18n.language, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   }
 
+  // Date range is already applied server-side (see the fetch effect above) —
+  // these are quick client-side toggles on top of whatever window is loaded.
   const filtered = useMemo(() => {
     if (!entries) return [];
     return entries.filter((e) =>
       (!category || e.category === category) &&
       (!symptomsOnly || e.hasSymptoms) &&
-      (!mealGuideOnly || e.compliance === "yes") &&
-      (!dayFrom || dayKey(e.eatenAt) >= dayFrom) &&
-      (!dayTo || dayKey(e.eatenAt) <= dayTo)
+      (!mealGuideOnly || e.compliance === "yes")
     );
-  }, [entries, category, symptomsOnly, mealGuideOnly, dayFrom, dayTo]);
+  }, [entries, category, symptomsOnly, mealGuideOnly]);
 
   // Most recent day first — today's meals at the top, not buried below older days.
   const days = useMemo(() => [...new Set(filtered.map((e) => dayKey(e.eatenAt)))].sort((a, b) => (a < b ? 1 : -1)), [filtered]);
@@ -108,6 +141,17 @@ export function NutritionScreen({ refreshKey } = {}) {
               </div>
             </section>
           ))
+        )}
+        {entries?.length > 0 && !usingExplicitRange && (
+          <div className="p-3">
+            <button
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="w-full min-h-[44px] border-2 border-border bg-white font-heading uppercase tracking-wide text-sm text-ink/70 disabled:opacity-50"
+            >
+              {loadingMore ? t("common.loading") : t("meal.loadMore")}
+            </button>
+          </div>
         )}
       </div>
 

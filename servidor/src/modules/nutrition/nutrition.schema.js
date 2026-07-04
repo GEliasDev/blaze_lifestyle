@@ -20,3 +20,11 @@ export const editEntrySchema = z.object({
 });
 
 export const MAX_PHOTOS = 5;
+
+// GET /entries range filter. Both bounds are optional ISO datetimes computed
+// by the client from local calendar days — the server just compares eaten_at
+// against whatever bounds it's given, no day-boundary math here.
+export const listQuerySchema = z.object({
+  from: z.string().datetime().optional(),
+  to: z.string().datetime().optional(),
+});

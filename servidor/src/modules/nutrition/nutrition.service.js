@@ -1,3 +1,4 @@
+import { Op } from "sequelize";
 import { MealEntryModel } from "./mealEntry.model.js";
 import { MealPhotoModel } from "./mealPhoto.model.js";
 import { CoachClientModel } from "../coaching/coachClients.model.js";
@@ -48,8 +49,12 @@ export const nutritionService = {
     return serialize(entry, await photosFor(entry.id));
   },
 
-  async listEntries(clientId) {
-    const entries = await MealEntryModel.findAll({ where: { clientId }, order: [["eaten_at", "DESC"]] });
+  async listEntries(clientId, range = {}) {
+    const eatenAt = {};
+    if (range.from) eatenAt[Op.gte] = range.from;
+    if (range.to) eatenAt[Op.lte] = range.to;
+    const where = { clientId, ...(Object.keys(eatenAt).length ? { eatenAt } : {}) };
+    const entries = await MealEntryModel.findAll({ where, order: [["eaten_at", "DESC"]] });
     const out = [];
     for (const e of entries) out.push(serialize(e, await photosFor(e.id)));
     return out;
