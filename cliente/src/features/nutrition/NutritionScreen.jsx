@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Filter, Plus, AlertCircle, Clock, UtensilsCrossed } from "lucide-react";
+import { Filter, Plus, AlertCircle, Calendar, Check, Clock, UtensilsCrossed, X } from "lucide-react";
 import { api } from "../../lib/api.js";
 import { AppHeader } from "../../components/AppHeader.jsx";
 import { ListSkeleton } from "../../components/Skeleton.jsx";
@@ -24,6 +24,9 @@ export function NutritionScreen({ refreshKey } = {}) {
   const [filterOpen, setFilterOpen] = useState(false);
   const [category, setCategory] = useState("");
   const [symptomsOnly, setSymptomsOnly] = useState(false);
+  const [mealGuideOnly, setMealGuideOnly] = useState(false);
+  const [dayFrom, setDayFrom] = useState("");
+  const [dayTo, setDayTo] = useState("");
 
   // refreshKey changes when add/edit/delete succeed elsewhere (see
   // NutritionLayout) — this component stays mounted across those navigations
@@ -38,17 +41,78 @@ export function NutritionScreen({ refreshKey } = {}) {
 
   const filtered = useMemo(() => {
     if (!entries) return [];
-    return entries.filter((e) => (!category || e.category === category) && (!symptomsOnly || e.hasSymptoms));
-  }, [entries, category, symptomsOnly]);
+    return entries.filter((e) =>
+      (!category || e.category === category) &&
+      (!symptomsOnly || e.hasSymptoms) &&
+      (!mealGuideOnly || e.compliance === "yes") &&
+      (!dayFrom || dayKey(e.eatenAt) >= dayFrom) &&
+      (!dayTo || dayKey(e.eatenAt) <= dayTo)
+    );
+  }, [entries, category, symptomsOnly, mealGuideOnly, dayFrom, dayTo]);
 
-  const days = useMemo(() => [...new Set(filtered.map((e) => dayKey(e.eatenAt)))].sort((a, b) => (a < b ? -1 : 1)), [filtered]);
+  // Most recent day first — today's meals at the top, not buried below older days.
+  const days = useMemo(() => [...new Set(filtered.map((e) => dayKey(e.eatenAt)))].sort((a, b) => (a < b ? 1 : -1)), [filtered]);
+
+  // Within each day, earliest meal on top, latest at the bottom — the order
+  // the client actually ate, not the API's latest-first order.
+  const byDay = useMemo(() => {
+    const map = {};
+    for (const d of days) {
+      map[d] = filtered
+        .filter((e) => dayKey(e.eatenAt) === d)
+        .sort((a, b) => new Date(a.eatenAt) - new Date(b.eatenAt));
+    }
+    return map;
+  }, [filtered, days]);
 
   return (
     <>
       <AppHeader title={t("module.nutrition").toUpperCase()} showBack={isCoach} backTo={isCoach ? "/coach" : null} />
 
+      <div className="flex-1 overflow-y-auto bg-muted">
+        {!entries ? <ListSkeleton /> : days.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-8 text-center">
+            <UtensilsCrossed className="w-12 h-12 text-ink/20 mb-4" />
+            <p className="font-heading uppercase text-ink/50">{t("entry.noEntries")}</p>
+          </div>
+        ) : (
+          days.map((d) => (
+            <section key={d}>
+              <h2 className="sticky top-0 z-10 bg-ink/90 text-white px-4 py-2 font-heading uppercase tracking-wide text-sm">{formatDate(d)}</h2>
+              <div className="p-3 space-y-3">
+                {byDay[d].map((e) => (
+                  <Link key={e.id} to={`${linkBase}/${e.id}`} className={`relative flex gap-3 bg-white border-2 p-3 hover:border-primary ${e.id === activeId ? "border-primary" : "border-border"}`}>
+                    <div className="relative w-20 h-20 shrink-0">
+                      {e.photos?.[0]
+                        ? <AuthImage path={`/photos/${e.photos[0].thumbKey}`} className="w-20 h-20 object-cover border-2 border-border" />
+                        : <div className="w-20 h-20 border-2 border-border bg-muted" />}
+                      {e.photos?.length > 1 && (
+                        <span className="absolute -bottom-1 -right-1 bg-primary text-white text-xs font-bold px-1">+{e.photos.length - 1}</span>
+                      )}
+                    </div>
+                    <div className={`flex-1 min-w-0 ${e.compliance === "yes" ? "pr-14" : ""}`}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-heading uppercase tracking-wide font-bold">{t(`category.${e.category}`)}</span>
+                        {e.hasSymptoms && <AlertCircle className="w-4 h-4 text-danger shrink-0" />}
+                      </div>
+                      {e.description && <p className="text-sm text-ink/70 mt-1 line-clamp-2">{e.description}</p>}
+                      <div className="flex items-center gap-1 text-sm font-bold text-ink mt-2"><Clock className="w-4 h-4" />{timeOf(e.eatenAt)}</div>
+                    </div>
+                    {e.compliance === "yes" && (
+                      <span className="absolute bottom-2 right-2 flex items-center gap-1 bg-success text-white px-2 py-1 text-xs font-heading uppercase tracking-wide">
+                        <Check className="w-4 h-4" />{t("meal.mealGuideShort")}
+                      </span>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            </section>
+          ))
+        )}
+      </div>
+
       {filterOpen && (
-        <div className="bg-muted border-b-2 border-primary p-3 space-y-3">
+        <div className="bg-muted border-t-2 border-primary p-3 space-y-3">
           <div className="flex flex-wrap gap-2">
             {CATEGORIES.map((c) => (
               <button
@@ -64,47 +128,39 @@ export function NutritionScreen({ refreshKey } = {}) {
             <input type="checkbox" checked={symptomsOnly} onChange={(e) => setSymptomsOnly(e.target.checked)} className="w-5 h-5" />
             <span className="text-sm font-medium">{t("meal.symptomsOnly")}</span>
           </label>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" checked={mealGuideOnly} onChange={(e) => setMealGuideOnly(e.target.checked)} className="w-5 h-5" />
+            <span className="text-sm font-medium">{t("meal.mealGuideOnly")}</span>
+          </label>
+          <div className="space-y-2">
+            <h3 className="flex items-center gap-2 font-heading uppercase tracking-wide text-sm">
+              <Calendar className="w-4 h-4" />{t("meal.dateRange")}
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="block">
+                <span className="block text-xs text-ink/50 uppercase tracking-wide mb-1">{t("meal.from")}</span>
+                <input type="date" value={dayFrom} max={dayTo || undefined} onChange={(e) => setDayFrom(e.target.value)}
+                  className="w-full min-h-[44px] px-3 border-2 border-border rounded-none font-bold bg-white text-sm focus:outline-none focus:border-primary" />
+              </label>
+              <label className="block">
+                <span className="block text-xs text-ink/50 uppercase tracking-wide mb-1">{t("meal.to")}</span>
+                <input type="date" value={dayTo} min={dayFrom || undefined} onChange={(e) => setDayTo(e.target.value)}
+                  className="w-full min-h-[44px] px-3 border-2 border-border rounded-none font-bold bg-white text-sm focus:outline-none focus:border-primary" />
+              </label>
+            </div>
+            {(dayFrom || dayTo) && (
+              <button
+                onClick={() => { setDayFrom(""); setDayTo(""); }}
+                className="flex items-center gap-1 px-3 min-h-[36px] border-2 border-border text-xs font-heading uppercase tracking-wide bg-white"
+              >
+                <X className="w-3.5 h-3.5" />{t("meal.clearDay")}
+              </button>
+            )}
+          </div>
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto bg-muted">
-        {!entries ? <ListSkeleton /> : days.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-8 text-center">
-            <UtensilsCrossed className="w-12 h-12 text-ink/20 mb-4" />
-            <p className="font-heading uppercase text-ink/50">{t("entry.noEntries")}</p>
-          </div>
-        ) : (
-          days.map((d) => (
-            <section key={d}>
-              <h2 className="sticky top-0 z-10 bg-ink/90 text-white px-4 py-2 font-heading uppercase tracking-wide text-sm">{formatDate(d)}</h2>
-              <div className="p-3 space-y-3">
-                {filtered.filter((e) => dayKey(e.eatenAt) === d).map((e) => (
-                  <Link key={e.id} to={`${linkBase}/${e.id}`} className={`flex gap-3 bg-white border-2 p-3 hover:border-primary ${e.id === activeId ? "border-primary" : "border-border"}`}>
-                    <div className="relative w-20 h-20 shrink-0">
-                      {e.photos?.[0]
-                        ? <AuthImage path={`/photos/${e.photos[0].thumbKey}`} className="w-20 h-20 object-cover border-2 border-border" />
-                        : <div className="w-20 h-20 border-2 border-border bg-muted" />}
-                      {e.photos?.length > 1 && (
-                        <span className="absolute -bottom-1 -right-1 bg-primary text-white text-xs font-bold px-1">+{e.photos.length - 1}</span>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-heading uppercase tracking-wide font-bold">{t(`category.${e.category}`)}</span>
-                        {e.hasSymptoms && <AlertCircle className="w-4 h-4 text-danger shrink-0" />}
-                      </div>
-                      {e.description && <p className="text-sm text-ink/70 mt-1 line-clamp-2">{e.description}</p>}
-                      <div className="flex items-center gap-1 text-xs text-ink/50 mt-2"><Clock className="w-3 h-3" />{timeOf(e.eatenAt)}</div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          ))
-        )}
-      </div>
-
-      <div className="border-t-2 border-border bg-white p-3 flex items-center justify-center gap-6">
+      <div className="sticky bottom-0 z-30 border-t-2 border-border bg-white p-3 flex items-center justify-center gap-6">
         <button
           onClick={() => setFilterOpen((v) => !v)}
           aria-label={t("nav.filter")}

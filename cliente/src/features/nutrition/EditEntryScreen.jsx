@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Camera, X } from "lucide-react";
 import { api } from "../../lib/api.js";
+import { compressImages } from "../../lib/imageCompress.js";
 import { AppHeader } from "../../components/AppHeader.jsx";
 import { Spinner } from "../../components/Spinner.jsx";
 import { Button } from "../../components/Button.jsx";
@@ -12,10 +13,14 @@ import { useNutritionListRefresh } from "./NutritionLayout.jsx";
 
 const CATEGORIES = ["Breakfast", "AM Snack", "Lunch", "PM Snack", "Dinner", "Supplement"];
 const COMPLIANCE = ["na", "yes", "no"];
-const MAX_PHOTOS = 3;
+const MAX_PHOTOS = 5;
 
 function timeOf(iso) {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+}
+
+function dateOf(iso) {
+  return new Date(iso).toLocaleDateString("en-CA"); // YYYY-MM-DD in local time
 }
 
 export function EditEntryScreen() {
@@ -29,12 +34,14 @@ export function EditEntryScreen() {
   const [kept, setKept] = useState([]);     // existing photos to keep
   const [newFiles, setNewFiles] = useState([]); // newly added File objects
   const [saving, setSaving] = useState(false);
+  const [compressing, setCompressing] = useState(false);
 
   useEffect(() => {
     api.get(`${apiBase}/${id}`).then((e) => {
       setEntry(e);
       setKept(e.photos);
       setForm({
+        date: dateOf(e.eatenAt),
         time: timeOf(e.eatenAt),
         category: e.category,
         compliance: e.compliance,
@@ -52,13 +59,20 @@ export function EditEntryScreen() {
 
   const newPreviews = newFiles.map((f) => ({ f, url: URL.createObjectURL(f) }));
   const total = kept.length + newFiles.length;
-  const canSave = form.category && form.description.trim() && !saving;
+  const canSave = form.category && form.date && form.time && form.description.trim() && !saving && !compressing;
 
   function eatenAtISO() {
-    const [h, m] = form.time.split(":");
-    const d = new Date(entry.eatenAt);
-    d.setHours(Number(h), Number(m), 0, 0);
-    return d.toISOString();
+    return new Date(`${form.date}T${form.time}:00`).toISOString();
+  }
+
+  async function onFilesPicked(fileList) {
+    setCompressing(true);
+    try {
+      const compressed = await compressImages(Array.from(fileList));
+      setNewFiles((prev) => [...prev, ...compressed].slice(0, MAX_PHOTOS - kept.length));
+    } finally {
+      setCompressing(false);
+    }
   }
 
   async function onSave() {
@@ -103,13 +117,19 @@ export function EditEntryScreen() {
             </div>
           )}
           {total < MAX_PHOTOS && (
-            <label className="flex flex-col items-center justify-center h-28 border-2 border-dashed border-ink/40 cursor-pointer text-ink/60">
+            <label className={`flex flex-col items-center justify-center h-28 border-2 border-dashed border-ink/40 text-ink/60 ${compressing ? "opacity-50" : "cursor-pointer"}`}>
               <Camera className="w-7 h-7 mb-1" />
-              <span className="font-heading uppercase text-sm">{t("meal.addPhotos")}</span>
-              <input type="file" accept="image/*" multiple className="hidden"
-                onChange={(e) => setNewFiles([...newFiles, ...Array.from(e.target.files)].slice(0, MAX_PHOTOS - kept.length))} />
+              <span className="font-heading uppercase text-sm">{compressing ? t("meal.processingPhotos") : t("meal.addPhotos")}</span>
+              <input type="file" accept="image/*" multiple className="hidden" disabled={compressing}
+                onChange={(e) => onFilesPicked(e.target.files)} />
             </label>
           )}
+        </section>
+
+        <section className="space-y-2">
+          <h3 className="font-heading uppercase tracking-wide text-sm">{t("meal.date")}</h3>
+          <input type="date" value={form.date} onChange={(e) => set({ date: e.target.value })}
+            className="w-full p-3 border-2 border-border rounded-none font-bold bg-white" />
         </section>
 
         <section className="space-y-2">
@@ -155,7 +175,7 @@ export function EditEntryScreen() {
         </section>
       </div>
 
-      <div className="p-4 border-t-2 border-border flex gap-3">
+      <div className="sticky bottom-0 z-30 bg-white p-4 border-t-2 border-border flex gap-3">
         <Button variant="primary" className="flex-1" disabled={!canSave} onClick={onSave}>{t("meal.saveChanges")}</Button>
         <Button variant="secondary" className="flex-1" onClick={() => navigate(`${linkBase}/${id}`)}>{t("common.cancel")}</Button>
       </div>

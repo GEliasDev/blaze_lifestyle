@@ -30,7 +30,7 @@ function Slider({ photos, startIndex = 0, large = false, onItemClick }) {
             onClick={() => onItemClick?.(i)}
             className={`snap-center shrink-0 w-full ${onItemClick ? "cursor-zoom-in" : "cursor-default"}`}
           >
-            <AuthImage path={`/photos/${p.storageKey}`} className={large ? "w-full h-[78vh] object-contain" : "w-full h-56 object-cover"} />
+            <AuthImage path={`/photos/${p.storageKey}`} className={large ? "w-full h-[78vh] object-contain" : "w-full h-72 object-contain bg-muted"} />
           </button>
         ))}
       </div>
@@ -59,7 +59,9 @@ export function PhotoCarousel({ photos }) {
 
   return (
     <>
-      <Slider photos={photos} onItemClick={(i) => setLightbox(i)} />
+      <div className="mx-auto w-full max-w-md lg:max-w-lg border-b-2 border-border">
+        <Slider photos={photos} onItemClick={(i) => setLightbox(i)} />
+      </div>
       {lightbox !== null && (
         <div className="fixed inset-0 z-50 bg-black flex flex-col">
           <div className="flex justify-end p-3">

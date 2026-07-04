@@ -25,7 +25,7 @@ export function AppHeader({ title, showBack = false, backTo = null, action = nul
   }, [open]);
 
   return (
-    <header className="bg-ink text-white">
+    <header className="sticky top-0 z-30 bg-ink text-white">
       {/* Mobile: full bar with hamburger + branding. */}
       <div className="flex items-center gap-2 p-4 lg:hidden">
         {showBack ? (

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Camera, X } from "lucide-react";
 import { api } from "../../lib/api.js";
+import { compressImages } from "../../lib/imageCompress.js";
 import { AppHeader } from "../../components/AppHeader.jsx";
 import { Button } from "../../components/Button.jsx";
 import { useNutritionScope } from "./useNutritionScope.js";
@@ -10,10 +11,14 @@ import { useNutritionListRefresh } from "./NutritionLayout.jsx";
 
 const CATEGORIES = ["Breakfast", "AM Snack", "Lunch", "PM Snack", "Dinner", "Supplement"];
 const COMPLIANCE = ["na", "yes", "no"];
-const MAX_PHOTOS = 3;
+const MAX_PHOTOS = 5;
 
 function today() {
   return new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD in local time
+}
+
+function now() {
+  return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
 export function AddMealScreen() {
@@ -23,19 +28,28 @@ export function AddMealScreen() {
   const refreshList = useNutritionListRefresh();
   const [files, setFiles] = useState([]);
   const [date, setDate] = useState(today());
+  const [time, setTime] = useState(now());
   const [category, setCategory] = useState("");
   const [compliance, setCompliance] = useState("na");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
+  const [compressing, setCompressing] = useState(false);
 
   const previews = files.map((f) => ({ f, url: URL.createObjectURL(f) }));
-  const canSave = category && date && description.trim() && !saving;
+  const canSave = category && date && time && description.trim() && !saving && !compressing;
 
-  // No time at creation — this plans a meal for a (possibly future) day. The
-  // client sets the real time when they edit after eating. Noon local keeps the
-  // entry on the chosen calendar day regardless of timezone.
   function eatenAtISO() {
-    return new Date(`${date}T12:00:00`).toISOString();
+    return new Date(`${date}T${time}:00`).toISOString();
+  }
+
+  async function onFilesPicked(fileList) {
+    setCompressing(true);
+    try {
+      const compressed = await compressImages(Array.from(fileList));
+      setFiles((prev) => [...prev, ...compressed].slice(0, MAX_PHOTOS));
+    } finally {
+      setCompressing(false);
+    }
   }
 
   async function onSave() {
@@ -69,12 +83,12 @@ export function AddMealScreen() {
             </div>
           )}
           {files.length < MAX_PHOTOS && (
-            <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-ink/40 cursor-pointer text-ink/60">
+            <label className={`flex flex-col items-center justify-center h-32 border-2 border-dashed border-ink/40 text-ink/60 ${compressing ? "opacity-50" : "cursor-pointer"}`}>
               <Camera className="w-7 h-7 mb-1" />
-              <span className="font-heading uppercase text-sm">{t("meal.addPhotos")}</span>
+              <span className="font-heading uppercase text-sm">{compressing ? t("meal.processingPhotos") : t("meal.addPhotos")}</span>
               <span className="text-xs mt-1">{t("meal.addPhotosHint")}</span>
-              <input type="file" accept="image/*" multiple className="hidden"
-                onChange={(e) => setFiles([...files, ...Array.from(e.target.files)].slice(0, MAX_PHOTOS))} />
+              <input type="file" accept="image/*" multiple className="hidden" disabled={compressing}
+                onChange={(e) => onFilesPicked(e.target.files)} />
             </label>
           )}
         </section>
@@ -82,6 +96,12 @@ export function AddMealScreen() {
         <section className="space-y-2">
           <h3 className="font-heading uppercase tracking-wide text-sm">{t("meal.date")}</h3>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
+            className="w-full p-3 border-2 border-border rounded-none font-bold bg-white" />
+        </section>
+
+        <section className="space-y-2">
+          <h3 className="font-heading uppercase tracking-wide text-sm">{t("meal.time")}</h3>
+          <input type="time" value={time} onChange={(e) => setTime(e.target.value)}
             className="w-full p-3 border-2 border-border rounded-none font-bold bg-white" />
         </section>
 
@@ -110,7 +130,7 @@ export function AddMealScreen() {
         </section>
       </div>
 
-      <div className="p-4 border-t-2 border-border">
+      <div className="sticky bottom-0 z-30 bg-white p-4 border-t-2 border-border">
         <Button variant="primary" className="w-full" disabled={!canSave} onClick={onSave}>{t("meal.save")}</Button>
       </div>
     </>

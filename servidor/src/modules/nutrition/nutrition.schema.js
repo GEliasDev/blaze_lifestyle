@@ -19,4 +19,4 @@ export const editEntrySchema = z.object({
   symptomDescription: z.string().optional(),
 });
 
-export const MAX_PHOTOS = 3;
+export const MAX_PHOTOS = 5;

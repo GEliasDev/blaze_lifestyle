@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AlertCircle, Check, Trash2 } from "lucide-react";
+import { AlertCircle, Check, Clock, Trash2 } from "lucide-react";
 import { api } from "../../lib/api.js";
 import { AppHeader } from "../../components/AppHeader.jsx";
 import { Spinner } from "../../components/Spinner.jsx";
@@ -47,6 +47,7 @@ export function EntryDetailScreen() {
   if (entry === false) return (<><AppHeader title={t("entry.detail").toUpperCase()} showBack backTo={linkBase} /><p className="p-8 text-center text-ink/50">{t("entry.noEntries")}</p></>);
 
   const date = new Date(entry.eatenAt).toLocaleDateString(i18n.language, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const time = new Date(entry.eatenAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   const badge = BADGE[entry.compliance] ?? BADGE.na;
 
   return (
@@ -60,6 +61,7 @@ export function EntryDetailScreen() {
             <div>
               <h2 className="font-heading uppercase tracking-wide text-xl font-bold">{t(`category.${entry.category}`)}</h2>
               <p className="text-ink/60 capitalize">{date}</p>
+              <p className="flex items-center gap-1 text-ink/60 text-sm mt-1"><Clock className="w-3.5 h-3.5" />{time}</p>
             </div>
             <span className={`shrink-0 font-heading uppercase tracking-wide text-xs px-3 py-2 ${badge.cls}`}>{t(badge.key)}</span>
           </div>
