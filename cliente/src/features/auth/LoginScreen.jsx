@@ -10,22 +10,22 @@ export function LoginScreen() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(false);
 
   async function onSubmit(e) {
     e.preventDefault();
-    setError(null);
+    setError(false);
     try {
       const user = await login(email, password);
       navigate(user.role === "coach" ? "/coach" : "/nutrition");
     } catch {
-      setError("error");
+      setError(true);
     }
   }
 
   return (
     <form onSubmit={onSubmit} className="mx-auto max-w-[430px] p-4 space-y-4">
-      <img src="/logo-white.png" alt="Blaze Lifestyle" className="h-28 w-auto mx-auto mb-2" />
+      <img src="/logo-white.webp" alt="Blaze Lifestyle" className="h-28 w-auto mx-auto mb-2" />
       <h1 className="font-heading uppercase tracking-wide text-2xl">{t("auth.login")}</h1>
       <label className="block">
         <span className="font-heading uppercase text-sm">{t("auth.email")}</span>
@@ -39,7 +39,7 @@ export function LoginScreen() {
           onChange={(e) => setPassword(e.target.value)}
           className="w-full p-3 border-2 border-ink rounded-none" />
       </label>
-      {error && <p role="alert" className="text-danger">{error}</p>}
+      {error && <p role="alert" className="text-danger">{t("auth.error")}</p>}
       <Button type="submit" variant="primary" className="w-full">{t("auth.login")}</Button>
       <button type="button" onClick={() => navigate("/register")} className="w-full text-sm text-ink/70 underline">{t("register.noAccount")}</button>
     </form>

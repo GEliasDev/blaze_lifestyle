@@ -31,9 +31,9 @@ export function NutritionScreen({ refreshKey } = {}) {
   const { apiBase, linkBase, isCoach } = useNutritionScope();
   const [entries, setEntries] = useState(null);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [category, setCategory] = useState("");
+  const [categories, setCategories] = useState([]);
   const [symptomsOnly, setSymptomsOnly] = useState(false);
-  const [mealGuideOnly, setMealGuideOnly] = useState(false);
+  const [mealGuideFilter, setMealGuideFilter] = useState(""); // "" | "yes" | "no"
   const [dayFrom, setDayFrom] = useState("");
   const [dayTo, setDayTo] = useState("");
   // Rolling window used when no explicit date-range filter is set — avoids
@@ -90,11 +90,11 @@ export function NutritionScreen({ refreshKey } = {}) {
   const filtered = useMemo(() => {
     if (!entries) return [];
     return entries.filter((e) =>
-      (!category || e.category === category) &&
+      (categories.length === 0 || categories.includes(e.category)) &&
       (!symptomsOnly || e.hasSymptoms) &&
-      (!mealGuideOnly || e.compliance === "yes")
+      (!mealGuideFilter || e.compliance === mealGuideFilter)
     );
-  }, [entries, category, symptomsOnly, mealGuideOnly]);
+  }, [entries, categories, symptomsOnly, mealGuideFilter]);
 
   // Most recent day first — today's meals at the top, not buried below older days.
   const days = useMemo(() => [...new Set(filtered.map((e) => dayKey(e.eatenAt)))].sort((a, b) => (a < b ? 1 : -1)), [filtered]);
@@ -178,21 +178,43 @@ export function NutritionScreen({ refreshKey } = {}) {
             {CATEGORIES.map((c) => (
               <button
                 key={c}
-                onClick={() => setCategory(category === c ? "" : c)}
-                className={`px-3 min-h-[36px] border-2 text-xs font-heading uppercase tracking-wide ${category === c ? "bg-primary text-white border-primary" : "bg-white text-ink border-border"}`}
+                onClick={() => setCategories((prev) => prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c])}
+                aria-pressed={categories.includes(c)}
+                className={`px-3 min-h-[36px] border-2 text-xs font-heading uppercase tracking-wide ${categories.includes(c) ? "bg-primary text-white border-primary" : "bg-white text-ink border-border"}`}
               >
                 {t(`category.${c}`)}
               </button>
             ))}
           </div>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={symptomsOnly} onChange={(e) => setSymptomsOnly(e.target.checked)} className="w-5 h-5" />
-            <span className="text-sm font-medium">{t("meal.symptomsOnly")}</span>
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={mealGuideOnly} onChange={(e) => setMealGuideOnly(e.target.checked)} className="w-5 h-5" />
-            <span className="text-sm font-medium">{t("meal.mealGuideOnly")}</span>
-          </label>
+          <div className="space-y-2">
+            <h3 className="font-heading uppercase tracking-wide text-sm">{t("meal.digestive")}</h3>
+            <button
+              onClick={() => setSymptomsOnly((v) => !v)}
+              aria-pressed={symptomsOnly}
+              className={`w-full px-3 min-h-[36px] border-2 text-xs font-heading uppercase tracking-wide ${symptomsOnly ? "bg-primary text-white border-primary" : "bg-white text-ink border-border"}`}
+            >
+              {t("meal.symptomsReported")}
+            </button>
+          </div>
+          <div className="space-y-2">
+            <h3 className="font-heading uppercase tracking-wide text-sm">{t("meal.compliance")}</h3>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setMealGuideFilter(mealGuideFilter === "yes" ? "" : "yes")}
+                aria-pressed={mealGuideFilter === "yes"}
+                className={`flex-1 px-3 min-h-[36px] border-2 text-xs font-heading uppercase tracking-wide ${mealGuideFilter === "yes" ? "bg-primary text-white border-primary" : "bg-white text-ink border-border"}`}
+              >
+                {t("meal.compliant")}
+              </button>
+              <button
+                onClick={() => setMealGuideFilter(mealGuideFilter === "no" ? "" : "no")}
+                aria-pressed={mealGuideFilter === "no"}
+                className={`flex-1 px-3 min-h-[36px] border-2 text-xs font-heading uppercase tracking-wide ${mealGuideFilter === "no" ? "bg-primary text-white border-primary" : "bg-white text-ink border-border"}`}
+              >
+                {t("meal.nonCompliant")}
+              </button>
+            </div>
+          </div>
           <div className="space-y-2">
             <h3 className="flex items-center gap-2 font-heading uppercase tracking-wide text-sm">
               <Calendar className="w-4 h-4" />{t("meal.dateRange")}

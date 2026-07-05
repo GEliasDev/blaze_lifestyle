@@ -20,7 +20,7 @@ export function ClientSidebar() {
   return (
     <aside className="hidden lg:flex lg:flex-col lg:h-dvh lg:sticky lg:top-0 bg-ink text-white border-r-2 border-white/10">
       <div className="p-4 border-b-2 border-white/10">
-        <img src="/logo-full.png" alt="Blaze Lifestyle" className="h-12 w-auto" />
+        <img src="/logo-full.webp" alt="Blaze Lifestyle" className="h-12 w-auto" />
         <div className="text-white/60 text-xs tracking-wide mt-1">NUTRITION TRACKER</div>
       </div>
       <nav className="flex-1 py-2">

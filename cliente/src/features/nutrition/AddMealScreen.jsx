@@ -10,7 +10,7 @@ import { useNutritionScope } from "./useNutritionScope.js";
 import { useNutritionListRefresh } from "./NutritionLayout.jsx";
 
 const CATEGORIES = ["Breakfast", "AM Snack", "Lunch", "PM Snack", "Dinner", "Supplement"];
-const COMPLIANCE = ["na", "yes", "no"];
+const COMPLIANCE = ["yes", "no"];
 const MAX_PHOTOS = 5;
 
 function today() {
@@ -30,13 +30,13 @@ export function AddMealScreen() {
   const [date, setDate] = useState(today());
   const [time, setTime] = useState(now());
   const [category, setCategory] = useState("");
-  const [compliance, setCompliance] = useState("na");
+  const [compliance, setCompliance] = useState("");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
   const [compressing, setCompressing] = useState(false);
 
   const previews = files.map((f) => ({ f, url: URL.createObjectURL(f) }));
-  const canSave = category && date && time && description.trim() && !saving && !compressing;
+  const canSave = category && !saving && !compressing;
 
   function eatenAtISO() {
     return new Date(`${date}T${time}:00`).toISOString();
@@ -57,7 +57,7 @@ export function AddMealScreen() {
     const form = new FormData();
     form.append("category", category);
     form.append("eatenAt", eatenAtISO());
-    form.append("compliance", compliance);
+    if (compliance) form.append("compliance", compliance);
     if (description.trim()) form.append("description", description.trim());
     files.forEach((f) => form.append("photos", f));
     try { await api.postForm(apiBase, form); refreshList(); navigate(linkBase); }
@@ -106,7 +106,7 @@ export function AddMealScreen() {
         </section>
 
         <section className="space-y-2">
-          <h3 className="font-heading uppercase tracking-wide text-sm">{t("meal.type")}</h3>
+          <h3 className="font-heading uppercase tracking-wide text-sm">{t("meal.type")} <span className="text-danger">*</span></h3>
           <select value={category} onChange={(e) => setCategory(e.target.value)}
             className="w-full p-3 border-2 border-border rounded-none font-bold bg-white">
             <option value="" disabled>{t("meal.typePlaceholder")}</option>
@@ -118,6 +118,7 @@ export function AddMealScreen() {
           <h3 className="font-heading uppercase tracking-wide text-sm">{t("meal.compliance")}</h3>
           <select value={compliance} onChange={(e) => setCompliance(e.target.value)}
             className="w-full p-3 border-2 border-border rounded-none font-bold bg-white">
+            <option value="" disabled>{t("meal.compliancePlaceholder")}</option>
             {COMPLIANCE.map((c) => <option key={c} value={c}>{t(`compliance.${c}`)}</option>)}
           </select>
         </section>
