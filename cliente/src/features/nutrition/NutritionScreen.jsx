@@ -123,7 +123,7 @@ export function NutritionScreen({ refreshKey } = {}) {
                         <span className="absolute -bottom-1 -right-1 bg-primary text-white text-xs font-bold px-1">+{e.photos.length - 1}</span>
                       )}
                     </div>
-                    <div className={`flex-1 min-w-0 ${e.compliance === "yes" ? "pr-14" : ""}`}>
+                    <div className={`flex-1 min-w-0 ${e.compliance === "yes" ? "pr-10" : ""}`}>
                       <div className="flex items-center gap-2">
                         <span className="font-heading uppercase tracking-wide font-bold">{t(`category.${e.category}`)}</span>
                         {e.hasSymptoms && <AlertCircle className="w-4 h-4 text-danger shrink-0" />}
@@ -132,8 +132,12 @@ export function NutritionScreen({ refreshKey } = {}) {
                       <div className="flex items-center gap-1 text-sm font-bold text-ink mt-2"><Clock className="w-4 h-4" />{timeOf(e.eatenAt)}</div>
                     </div>
                     {e.compliance === "yes" && (
-                      <span className="absolute bottom-2 right-2 flex items-center gap-1 bg-success text-white px-2 py-1 text-xs font-heading uppercase tracking-wide">
-                        <Check className="w-4 h-4" />{t("meal.mealGuideShort")}
+                      <span
+                        role="img"
+                        aria-label={t("meal.complianceYes")}
+                        className="absolute bottom-2 right-2 flex items-center justify-center w-8 h-8 rounded-full bg-success text-white"
+                      >
+                        <Check className="w-5 h-5" strokeWidth={3} />
                       </span>
                     )}
                   </Link>
