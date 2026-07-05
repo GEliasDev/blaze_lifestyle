@@ -11,7 +11,7 @@ const modules = [
   { to: "/body-comp", icon: Scale, key: "module.bodyComp" },
 ];
 
-export function AppHeader({ title, showBack = false, backTo = null, action = null, showLogo = true }) {
+export function AppHeader({ title, showBack = false, backTo = null, action = null }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { logout } = useAuth();
@@ -38,14 +38,8 @@ export function AppHeader({ title, showBack = false, backTo = null, action = nul
           </button>
         )}
         <div className="flex-1 min-w-0">
-          {showLogo ? (
-            <>
-              <img src="/logo-full.png" alt="Blaze Lifestyle" className="h-10 w-auto" />
-              <div className="text-white/60 text-xs tracking-wide mt-0.5">{title ?? "NUTRITION TRACKER"}</div>
-            </>
-          ) : (
-            <div className="font-heading font-bold tracking-wide uppercase text-lg truncate">{title ?? "NUTRITION TRACKER"}</div>
-          )}
+          <div className="font-heading font-bold tracking-wide text-lg">BLAZE LIFESTYLE</div>
+          <div className="text-white/60 text-xs tracking-wide">{title ?? "NUTRITION TRACKER"}</div>
         </div>
         {action}
       </div>

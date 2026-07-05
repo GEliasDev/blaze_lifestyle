@@ -25,7 +25,7 @@ export function LoginScreen() {
 
   return (
     <form onSubmit={onSubmit} className="mx-auto max-w-[430px] p-4 space-y-4">
-      <img src="/logo-full.png" alt="Blaze Lifestyle" className="h-28 w-auto mx-auto mb-2" />
+      <img src="/logo-white.jpeg" alt="Blaze Lifestyle" className="h-28 w-auto mx-auto mb-2" />
       <h1 className="font-heading uppercase tracking-wide text-2xl">{t("auth.login")}</h1>
       <label className="block">
         <span className="font-heading uppercase text-sm">{t("auth.email")}</span>

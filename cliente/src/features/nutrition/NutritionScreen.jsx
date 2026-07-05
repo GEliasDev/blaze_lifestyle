@@ -113,7 +113,7 @@ export function NutritionScreen({ refreshKey } = {}) {
 
   return (
     <>
-      <AppHeader title={t("module.nutrition").toUpperCase()} showBack={isCoach} backTo={isCoach ? "/coach" : null} showLogo={false} />
+      <AppHeader title="NUTRITION TRACKER" showBack={isCoach} backTo={isCoach ? "/coach" : null} />
 
       <div className="flex-1 overflow-y-auto bg-muted">
         {!entries ? <ListSkeleton /> : days.length === 0 ? (
