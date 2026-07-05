@@ -150,7 +150,7 @@ export function NutritionScreen({ refreshKey } = {}) {
                         aria-label={t("meal.complianceYes")}
                         className="absolute bottom-2 right-2 flex items-center justify-center"
                       >
-                        <Check className="w-6 h-6 text-success" strokeWidth={3} />
+                        <Check className="w-5 h-5 text-success" strokeWidth={3} />
                       </span>
                     )}
                   </Link>
