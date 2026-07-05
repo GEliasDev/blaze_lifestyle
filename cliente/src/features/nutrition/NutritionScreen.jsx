@@ -41,6 +41,7 @@ export function NutritionScreen({ refreshKey } = {}) {
   // load. "Load more" pushes this back another DEFAULT_WINDOW_DAYS.
   const [windowFrom, setWindowFrom] = useState(() => daysBefore(todayKey(), DEFAULT_WINDOW_DAYS - 1));
   const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const usingExplicitRange = Boolean(dayFrom || dayTo);
 
   // refreshKey changes when add/edit/delete succeed elsewhere (see
@@ -53,6 +54,18 @@ export function NutritionScreen({ refreshKey } = {}) {
     const query = Object.fromEntries(Object.entries(range).filter(([, v]) => v));
     api.get(apiBase, query).then(setEntries).catch(() => setEntries([]));
   }, [apiBase, refreshKey, usingExplicitRange, dayFrom, dayTo, windowFrom]);
+
+  // "Load more" only makes sense if something actually exists before the
+  // loaded window — a cheap limit:1 probe avoids showing a button that would
+  // just reload the same (empty) range when the client has < 30 days of history.
+  useEffect(() => {
+    if (usingExplicitRange) { setHasMore(false); return; }
+    let active = true;
+    api.get(apiBase, { to: endOfDayISO(daysBefore(windowFrom, 1)), limit: 1 })
+      .then((older) => { if (active) setHasMore(older.length > 0); })
+      .catch(() => { if (active) setHasMore(false); });
+    return () => { active = false; };
+  }, [apiBase, refreshKey, usingExplicitRange, windowFrom]);
 
   async function loadMore() {
     setLoadingMore(true);
@@ -100,7 +113,7 @@ export function NutritionScreen({ refreshKey } = {}) {
 
   return (
     <>
-      <AppHeader title={t("module.nutrition").toUpperCase()} showBack={isCoach} backTo={isCoach ? "/coach" : null} />
+      <AppHeader title={t("module.nutrition").toUpperCase()} showBack={isCoach} backTo={isCoach ? "/coach" : null} showLogo={false} />
 
       <div className="flex-1 overflow-y-auto bg-muted">
         {!entries ? <ListSkeleton /> : days.length === 0 ? (
@@ -123,7 +136,7 @@ export function NutritionScreen({ refreshKey } = {}) {
                         <span className="absolute -bottom-1 -right-1 bg-primary text-white text-xs font-bold px-1">+{e.photos.length - 1}</span>
                       )}
                     </div>
-                    <div className={`flex-1 min-w-0 ${e.compliance === "yes" ? "pr-10" : ""}`}>
+                    <div className={`flex-1 min-w-0 ${e.compliance === "yes" ? "pr-8" : ""}`}>
                       <div className="flex items-center gap-2">
                         <span className="font-heading uppercase tracking-wide font-bold">{t(`category.${e.category}`)}</span>
                         {e.hasSymptoms && <AlertCircle className="w-4 h-4 text-danger shrink-0" />}
@@ -135,9 +148,9 @@ export function NutritionScreen({ refreshKey } = {}) {
                       <span
                         role="img"
                         aria-label={t("meal.complianceYes")}
-                        className="absolute bottom-2 right-2 flex items-center justify-center w-8 h-8 rounded-full bg-success text-white"
+                        className="absolute bottom-2 right-2 flex items-center justify-center"
                       >
-                        <Check className="w-5 h-5" strokeWidth={3} />
+                        <Check className="w-6 h-6 text-success" strokeWidth={3} />
                       </span>
                     )}
                   </Link>
@@ -146,7 +159,7 @@ export function NutritionScreen({ refreshKey } = {}) {
             </section>
           ))
         )}
-        {entries?.length > 0 && !usingExplicitRange && (
+        {entries && hasMore && (
           <div className="p-3">
             <button
               onClick={loadMore}

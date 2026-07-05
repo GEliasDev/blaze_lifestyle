@@ -11,7 +11,7 @@ const modules = [
   { to: "/body-comp", icon: Scale, key: "module.bodyComp" },
 ];
 
-export function AppHeader({ title, showBack = false, backTo = null, action = null }) {
+export function AppHeader({ title, showBack = false, backTo = null, action = null, showLogo = true }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { logout } = useAuth();
@@ -38,8 +38,14 @@ export function AppHeader({ title, showBack = false, backTo = null, action = nul
           </button>
         )}
         <div className="flex-1 min-w-0">
-          <img src="/logo-mark.png" alt="Blaze Lifestyle" className="h-7 w-auto" />
-          <div className="text-white/60 text-xs tracking-wide mt-0.5">{title ?? "NUTRITION TRACKER"}</div>
+          {showLogo ? (
+            <>
+              <img src="/logo-full.png" alt="Blaze Lifestyle" className="h-10 w-auto" />
+              <div className="text-white/60 text-xs tracking-wide mt-0.5">{title ?? "NUTRITION TRACKER"}</div>
+            </>
+          ) : (
+            <div className="font-heading font-bold tracking-wide uppercase text-lg truncate">{title ?? "NUTRITION TRACKER"}</div>
+          )}
         </div>
         {action}
       </div>
@@ -60,7 +66,7 @@ export function AppHeader({ title, showBack = false, backTo = null, action = nul
           <button aria-label={t("common.cancel")} onClick={() => setOpen(false)} className="absolute inset-0 bg-black/50" />
           <nav className="absolute inset-y-0 left-0 w-72 max-w-[80%] bg-ink text-white flex flex-col border-r-2 border-white/10">
             <div className="flex items-center justify-between p-4 border-b-2 border-white/10">
-              <img src="/logo-mark.png" alt="Blaze Lifestyle" className="h-7 w-auto" />
+              <span className="font-heading font-bold tracking-wide text-lg">BLAZE LIFESTYLE</span>
               <button onClick={() => setOpen(false)} aria-label={t("common.cancel")} className="min-h-[44px] min-w-[44px] flex items-center justify-center -mr-2">
                 <X className="w-6 h-6" />
               </button>

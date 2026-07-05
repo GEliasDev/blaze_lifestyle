@@ -54,7 +54,11 @@ export const nutritionService = {
     if (range.from) eatenAt[Op.gte] = range.from;
     if (range.to) eatenAt[Op.lte] = range.to;
     const where = { clientId, ...(Object.keys(eatenAt).length ? { eatenAt } : {}) };
-    const entries = await MealEntryModel.findAll({ where, order: [["eaten_at", "DESC"]] });
+    const entries = await MealEntryModel.findAll({
+      where,
+      order: [["eaten_at", "DESC"]],
+      ...(range.limit ? { limit: range.limit } : {}),
+    });
     const out = [];
     for (const e of entries) out.push(serialize(e, await photosFor(e.id)));
     return out;

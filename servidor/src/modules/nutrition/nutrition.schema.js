@@ -27,4 +27,5 @@ export const MAX_PHOTOS = 5;
 export const listQuerySchema = z.object({
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
+  limit: z.coerce.number().int().positive().max(100).optional(),
 });
