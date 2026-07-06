@@ -45,13 +45,13 @@ export function ExerciseCalendarScreen() {
     const from = calendarDays[0];
     const to = calendarDays[calendarDays.length - 1];
     setEntries(null);
-    api.get(apiBase, { from: startOfDayISO(from), to: endOfDayISO(to) }).then(setEntries).catch(() => setEntries([]));
+    api.get(apiBase, { from: startOfDayISO(from), to: endOfDayISO(to) }).then(setEntries).catch(() => setEntries(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiBase, monthDate]);
 
   const entriesByDay = useMemo(() => {
     const map = {};
-    for (const e of entries ?? []) {
+    for (const e of Array.isArray(entries) ? entries : []) {
       const k = dayKey(e.exercisedAt);
       (map[k] ??= []).push(e);
     }
@@ -91,7 +91,9 @@ export function ExerciseCalendarScreen() {
           <div className="grid grid-cols-7 gap-1 mb-2">
             {DAY_NAMES.map((d) => <div key={d} className="text-center text-xs font-heading uppercase text-ink/50">{d}</div>)}
           </div>
-          {entries === null ? <Spinner /> : (
+          {entries === null ? <Spinner /> : entries === false ? (
+            <p className="text-ink/50 text-sm text-center py-8">{t("common.error")}</p>
+          ) : (
             <div className="grid grid-cols-7 gap-1">
               {calendarDays.map((date, i) => {
                 const isCurrentMonth = date.getMonth() === monthDate.getMonth();
@@ -102,7 +104,7 @@ export function ExerciseCalendarScreen() {
                   <button
                     key={i}
                     onClick={() => setSelectedDay(date)}
-                    className={`aspect-square flex items-center justify-center text-sm border-2 ${isCurrentMonth ? "text-ink" : "text-ink/30 border-transparent"} ${isSelected ? "border-primary" : hasEntries ? "border-ink bg-ink text-white" : "border-transparent"}`}
+                    className={`aspect-square flex items-center justify-center text-sm border-2 ${isCurrentMonth ? `text-ink ${isSelected ? "border-primary" : hasEntries ? "border-ink bg-ink text-white" : "border-transparent"}` : "text-ink/30 border-transparent"}`}
                   >
                     {date.getDate()}
                   </button>
