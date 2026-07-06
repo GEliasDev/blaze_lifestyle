@@ -9,7 +9,15 @@ import { NutritionLayout } from "../features/nutrition/NutritionLayout.jsx";
 import { AddMealScreen } from "../features/nutrition/AddMealScreen.jsx";
 import { EntryDetailScreen } from "../features/nutrition/EntryDetailScreen.jsx";
 import { EditEntryScreen } from "../features/nutrition/EditEntryScreen.jsx";
+import { ExerciseLayout } from "../features/exercise/ExerciseLayout.jsx";
+import { ExerciseHomeScreen } from "../features/exercise/ExerciseHomeScreen.jsx";
+import { ExerciseCalendarScreen } from "../features/exercise/ExerciseCalendarScreen.jsx";
+import { ExerciseAddScreen } from "../features/exercise/ExerciseAddScreen.jsx";
+import { ExerciseTagsScreen } from "../features/exercise/ExerciseTagsScreen.jsx";
+import { ExerciseEntryDetailScreen } from "../features/exercise/ExerciseEntryDetailScreen.jsx";
+import { ExerciseEditEntryScreen } from "../features/exercise/ExerciseEditEntryScreen.jsx";
 import { ClientsScreen } from "../features/coach/ClientsScreen.jsx";
+import { CoachTagsScreen } from "../features/coach/CoachTagsScreen.jsx";
 import { CoachClientLayout } from "../features/coach/CoachClientLayout.jsx";
 import { CoachClientHome } from "../features/coach/CoachClientHome.jsx";
 import { SettingsScreen } from "../features/account/SettingsScreen.jsx";
@@ -59,7 +67,18 @@ export const routes = [
               { path: ":id/edit", element: <EditEntryScreen /> },
             ],
           },
-          { path: "/exercise", element: <ModulePlaceholder titleKey="module.exercise" /> },
+          {
+            path: "/exercise",
+            element: <ExerciseLayout />,
+            children: [
+              { index: true, element: <ExerciseHomeScreen /> },
+              { path: "calendar", element: <ExerciseCalendarScreen /> },
+              { path: "tags", element: <ExerciseTagsScreen /> },
+              { path: "add", element: <ExerciseAddScreen /> },
+              { path: ":id", element: <ExerciseEntryDetailScreen /> },
+              { path: ":id/edit", element: <ExerciseEditEntryScreen /> },
+            ],
+          },
           { path: "/sleep", element: <ModulePlaceholder titleKey="module.sleep" /> },
           { path: "/body-comp", element: <ModulePlaceholder titleKey="module.bodyComp" /> },
           { path: "/settings", element: <SettingsScreen /> },
@@ -74,6 +93,7 @@ export const routes = [
         element: <CoachLayout />,
         children: [
           { path: "/coach", element: <ClientsScreen /> },
+          { path: "/coach/tags", element: <CoachTagsScreen /> },
         ],
       },
       // Coach reviewing one client. Desktop shows [module sidebar · list ·
@@ -91,6 +111,15 @@ export const routes = [
               { path: "add", element: <AddMealScreen /> },
               { path: ":id", element: <EntryDetailScreen /> },
               { path: ":id/edit", element: <EditEntryScreen /> },
+            ],
+          },
+          {
+            path: "exercise",
+            element: <ExerciseLayout />,
+            children: [
+              { index: true, element: <ExerciseHomeScreen /> },
+              { path: "calendar", element: <ExerciseCalendarScreen /> },
+              { path: ":id", element: <ExerciseEntryDetailScreen /> },
             ],
           },
         ],
