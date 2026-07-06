@@ -32,7 +32,7 @@ export function RegisterScreen() {
   if (coachCode) {
     return (
       <div className="mx-auto max-w-[430px] p-6 space-y-4 text-center">
-        <img src="/logo-full.webp" alt="Blaze Lifestyle" className="h-24 w-auto mx-auto" />
+        <img src="/logo-white.webp" alt="Blaze Lifestyle" className="h-28 w-auto mx-auto mb-2" />
         <h1 className="font-heading uppercase tracking-wide text-2xl">{t("register.yourCode")}</h1>
         <div className="border-2 border-primary text-primary font-heading text-3xl tracking-[0.3em] py-4">{coachCode}</div>
         <p className="text-ink/70 text-sm">{t("register.shareCode")}</p>
@@ -50,7 +50,7 @@ export function RegisterScreen() {
 
   return (
     <form onSubmit={onSubmit} className="mx-auto max-w-[430px] p-4 space-y-4">
-      <img src="/logo-full.webp" alt="Blaze Lifestyle" className="h-24 w-auto mx-auto mb-2" />
+      <img src="/logo-white.webp" alt="Blaze Lifestyle" className="h-28 w-auto mx-auto mb-2" />
       <h1 className="font-heading uppercase tracking-wide text-2xl">{t("register.title")}</h1>
       <label className="block space-y-1"><span className="font-heading uppercase text-sm">{t("register.name")}</span>
         <input aria-label={t("register.name")} value={form.name} onChange={set("name")} className={field} required /></label>
