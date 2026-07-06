@@ -7,7 +7,9 @@ import { errorHandler } from "./middleware/error.js";
 import { generalLimiter } from "./middleware/rateLimit.js";
 import { logger } from "./lib/logger.js";
 import { authRouter } from "./modules/auth/auth.route.js";
-import { clientEntriesRouter, coachEntriesRouter, photosRouter } from "./modules/nutrition/nutrition.route.js";
+import { clientEntriesRouter, coachEntriesRouter } from "./modules/nutrition/nutrition.route.js";
+import { clientExerciseRouter, coachExerciseRouter, tagsRouter } from "./modules/exercise/exercise.route.js";
+import { photosRouter } from "./modules/photos/photos.route.js";
 import { coachingRouter } from "./modules/coaching/coaching.route.js";
 import { accountRouter } from "./modules/account/account.route.js";
 
@@ -23,9 +25,12 @@ export function createApp() {
   app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
   app.use("/api/auth", authRouter);
   app.use("/api/me", clientEntriesRouter);
+  app.use("/api/me", clientExerciseRouter);
   app.use("/api/photos", photosRouter);
   app.use("/api/coach", coachingRouter);
   app.use("/api/coach", coachEntriesRouter);
+  app.use("/api/coach", coachExerciseRouter);
+  app.use("/api/exercise-tags", tagsRouter);
   app.use("/api/me", accountRouter);
   app.use(errorHandler);
   return app;

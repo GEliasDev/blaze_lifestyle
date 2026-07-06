@@ -24,8 +24,3 @@ coachEntriesRouter.post("/clients/:clientId/entries", photos, validate(createEnt
 coachEntriesRouter.get("/clients/:clientId/entries/:id", coachNutritionController.get);
 coachEntriesRouter.patch("/clients/:clientId/entries/:id", photos, coachNutritionController.update);
 coachEntriesRouter.delete("/clients/:clientId/entries/:id", coachNutritionController.remove);
-
-// Authenticated photo proxy (both roles): mounted at /api/photos, key is "<prefix>/<file>"
-export const photosRouter = Router();
-photosRouter.use(authGuard);
-photosRouter.get("/:prefix/:file", nutritionController.photo);
