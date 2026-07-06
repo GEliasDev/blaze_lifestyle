@@ -1,6 +1,7 @@
 import { sequelize } from "./lib/db.js";
 import { createApp } from "./app.js";
 import { config } from "./config.js";
+import { exerciseService } from "./modules/exercise/exercise.service.js";
 
 // Importing createApp pulls in the route → controller → service → model graph,
 // which registers every Sequelize model before we sync.
@@ -12,6 +13,7 @@ const app = createApp();
 // planned for production.
 await sequelize.authenticate();
 await sequelize.sync({ alter: true });
+await exerciseService.ensureSystemTags();
 
 app.listen(config.port, () => {
   console.log(`API listening on :${config.port}`);
