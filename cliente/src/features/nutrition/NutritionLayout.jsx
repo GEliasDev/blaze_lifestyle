@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { Outlet, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { NutritionScreen } from "./NutritionScreen.jsx";
+import { NutritionBottomNav } from "./NutritionBottomNav.jsx";
 import { useNutritionScope } from "./useNutritionScope.js";
 
 // The meal list (NutritionScreen) is mounted once by this layout and stays
@@ -84,33 +85,37 @@ export function NutritionLayout() {
 
   return (
     <NutritionListRefreshContext.Provider value={refresh}>
-      <div
-        ref={containerRef}
-        className="h-dvh flex flex-col lg:grid"
-        style={{ gridTemplateColumns: `${masterWidth}px 6px 1fr` }}
-      >
-        {/* Master: meal list. On mobile shown only when nothing is selected. */}
-        <div className={`${atIndex ? "flex" : "hidden"} lg:flex flex-col flex-1 min-h-0 lg:h-dvh overflow-hidden`}>
-          <NutritionScreen refreshKey={refreshKey} />
-        </div>
-
-        {/* Drag handle: desktop-only, resizes the master column. */}
+      <div className="h-dvh flex flex-col">
         <div
-          role="separator"
-          aria-orientation="vertical"
-          aria-label={t("nutrition.resizePanels")}
-          tabIndex={0}
-          onPointerDown={onResizeStart}
-          onPointerMove={onResizeMove}
-          onPointerUp={onResizeEnd}
-          onKeyDown={onResizeKeyDown}
-          className="hidden lg:block w-1.5 cursor-col-resize bg-border hover:bg-primary focus:bg-primary focus:outline-none active:bg-primary transition-colors"
-        />
+          ref={containerRef}
+          className="flex-1 min-h-0 flex flex-col lg:grid"
+          style={{ gridTemplateColumns: `${masterWidth}px 6px 1fr` }}
+        >
+          {/* Master: meal list. On mobile shown only when nothing is selected. */}
+          <div className={`${atIndex ? "flex" : "hidden"} lg:flex flex-col flex-1 min-h-0 lg:h-dvh overflow-hidden`}>
+            <NutritionScreen refreshKey={refreshKey} />
+          </div>
 
-        {/* Detail: selected meal / add / edit. On mobile shown only when active. */}
-        <div className={`${atIndex ? "hidden" : "flex"} lg:flex flex-col flex-1 min-h-0 lg:h-dvh overflow-hidden`}>
-          {atIndex ? <DetailPlaceholder /> : <Outlet />}
+          {/* Drag handle: desktop-only, resizes the master column. */}
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label={t("nutrition.resizePanels")}
+            tabIndex={0}
+            onPointerDown={onResizeStart}
+            onPointerMove={onResizeMove}
+            onPointerUp={onResizeEnd}
+            onKeyDown={onResizeKeyDown}
+            className="hidden lg:block w-1.5 cursor-col-resize bg-border hover:bg-primary focus:bg-primary focus:outline-none active:bg-primary transition-colors"
+          />
+
+          {/* Detail: selected meal / add / edit. On mobile shown only when active. */}
+          <div className={`${atIndex ? "hidden" : "flex"} lg:flex flex-col flex-1 min-h-0 lg:h-dvh overflow-hidden`}>
+            {atIndex ? <DetailPlaceholder /> : <Outlet />}
+          </div>
         </div>
+
+        <NutritionBottomNav linkBase={linkBase} />
       </div>
     </NutritionListRefreshContext.Provider>
   );

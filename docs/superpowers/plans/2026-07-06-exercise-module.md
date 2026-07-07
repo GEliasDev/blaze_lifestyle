@@ -29,6 +29,13 @@ Tailwind + React Router + react-i18next (frontend). No test framework exists in 
   CLAUDE.md — no `es.json` mirror needed).
 - **Authorization in two places:** Express route-level `roleGuard` AND service-level ownership check
   (`ownedEntry` / `assertCoachOwnsClient`), same as every other module.
+- **`AppHeader` already supports `desktopBackTo`** (added in a prior session, alongside `backTo`) —
+  on mobile the back button uses `backTo`, on desktop it uses `desktopBackTo` (falls back to `backTo`
+  if omitted). For every coach-mode screen in this plan, pass
+  `backTo={isCoach ? `/coach/clients/${clientId}` : null}` (mobile: back to that client's module
+  list) and `desktopBackTo={isCoach ? "/coach" : null}` (desktop: back to the full clients list,
+  unchanged — the per-client sidebar already shows module links there). This same fix was already
+  applied to `NutritionScreen.jsx` and the placeholder `ExerciseScreen.jsx` — don't regress it.
 - **`docs/` is gitignored** but specs/plans are force-added (`git add -f`) — every commit step below
   that touches this plan file itself is unnecessary (the plan doesn't need re-committing), but new
   source files use plain `git add`.
@@ -386,9 +393,15 @@ export const exerciseService = {
 
   async listEntries(clientId, range = {}) {
     const exercisedAt = {};
-    if (range.from) exercisedAt[Op.gte] = range.from;
-    if (range.to) exercisedAt[Op.lte] = range.to;
-    const where = { clientId, ...(Object.keys(exercisedAt).length ? { exercisedAt } : {}) };
+    let hasRange = false;
+    // Op.gte/Op.lte are Symbol keys — Object.keys(exercisedAt) can't see them,
+    // so checking Object.keys(...).length here would always read "no range"
+    // and silently drop this filter (a real bug found and fixed in Nutrition's
+    // equivalent listEntries — see nutrition.service.js). Track it with a
+    // plain boolean instead.
+    if (range.from) { exercisedAt[Op.gte] = range.from; hasRange = true; }
+    if (range.to) { exercisedAt[Op.lte] = range.to; hasRange = true; }
+    const where = { clientId, ...(hasRange ? { exercisedAt } : {}) };
     const entries = await ExerciseEntryModel.findAll({
       where,
       order: [["exercised_at", "DESC"]],
@@ -1219,14 +1232,19 @@ import { useExerciseScope } from "./useExerciseScope.js";
 
 export function ExerciseHomeScreen() {
   const { t } = useTranslation();
-  const { isCoach, statsBase } = useExerciseScope();
+  const { isCoach, clientId, statsBase } = useExerciseScope();
   const [stats, setStats] = useState(null);
 
   useEffect(() => { api.get(statsBase).then(setStats).catch(() => setStats(false)); }, [statsBase]);
 
   return (
     <>
-      <AppHeader title={t("exercise.tracker").toUpperCase()} showBack={isCoach} backTo={isCoach ? "/coach" : null} />
+      <AppHeader
+        title={t("exercise.tracker").toUpperCase()}
+        showBack={isCoach}
+        backTo={isCoach ? `/coach/clients/${clientId}` : null}
+        desktopBackTo={isCoach ? "/coach" : null}
+      />
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {stats === null ? <Spinner /> : stats === false ? (
           <p className="text-ink/50 text-sm text-center p-8">{t("common.error")}</p>
@@ -1331,7 +1349,7 @@ function getCalendarDays(monthDate) {
 export function ExerciseCalendarScreen() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { isCoach, apiBase, linkBase } = useExerciseScope();
+  const { isCoach, clientId, apiBase, linkBase } = useExerciseScope();
   const [monthDate, setMonthDate] = useState(new Date());
   const [entries, setEntries] = useState(null);
   const [selectedDay, setSelectedDay] = useState(null);
@@ -1367,7 +1385,12 @@ export function ExerciseCalendarScreen() {
 
   return (
     <>
-      <AppHeader title={t("exercise.calendar").toUpperCase()} showBack={isCoach} backTo={isCoach ? "/coach" : null} />
+      <AppHeader
+        title={t("exercise.calendar").toUpperCase()}
+        showBack={isCoach}
+        backTo={isCoach ? `/coach/clients/${clientId}` : null}
+        desktopBackTo={isCoach ? "/coach" : null}
+      />
       <div className="flex-1 overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b-2 border-border">
           <button onClick={() => navigateMonth(-1)} aria-label={t("common.back")} className="min-h-[44px] min-w-[44px] flex items-center justify-center">
@@ -1911,14 +1934,19 @@ import { useExerciseScope } from "./useExerciseScope.js";
 // CoachTagsScreen.jsx under features/coach/).
 export function ExerciseTagsScreen() {
   const { t } = useTranslation();
-  const { isCoach } = useExerciseScope();
+  const { isCoach, clientId } = useExerciseScope();
   const [tags, setTags] = useState(null);
 
   useEffect(() => { api.get("/exercise-tags").then(setTags).catch(() => setTags([])); }, []);
 
   return (
     <>
-      <AppHeader title={t("exercise.tags").toUpperCase()} showBack={isCoach} backTo={isCoach ? "/coach" : null} />
+      <AppHeader
+        title={t("exercise.tags").toUpperCase()}
+        showBack={isCoach}
+        backTo={isCoach ? `/coach/clients/${clientId}` : null}
+        desktopBackTo={isCoach ? "/coach" : null}
+      />
       <div className="flex-1 overflow-y-auto p-4">
         {tags === null ? <Spinner /> : (
           <div className="space-y-2">

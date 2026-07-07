@@ -17,11 +17,15 @@ clientExerciseRouter.patch("/exercise-entries/:id", photos, exerciseController.u
 clientExerciseRouter.delete("/exercise-entries/:id", exerciseController.remove);
 clientExerciseRouter.get("/exercise-stats", exerciseController.stats);
 
-// Coach acting on a specific client's entries: mounted at /api/coach — read-only (no create/edit/delete).
+// Coach acting on a specific client's entries: mounted at /api/coach — same
+// full access as the client (create/edit/delete), not read-only.
 export const coachExerciseRouter = Router();
 coachExerciseRouter.use(authGuard, roleGuard("coach"));
 coachExerciseRouter.get("/clients/:clientId/exercise-entries", coachExerciseController.list);
+coachExerciseRouter.post("/clients/:clientId/exercise-entries", photos, validate(createEntrySchema), coachExerciseController.create);
 coachExerciseRouter.get("/clients/:clientId/exercise-entries/:id", coachExerciseController.get);
+coachExerciseRouter.patch("/clients/:clientId/exercise-entries/:id", photos, coachExerciseController.update);
+coachExerciseRouter.delete("/clients/:clientId/exercise-entries/:id", coachExerciseController.remove);
 coachExerciseRouter.get("/clients/:clientId/exercise-stats", coachExerciseController.stats);
 
 // Global tags (not client-scoped): mounted at /api/exercise-tags.

@@ -7,13 +7,13 @@ import { useExerciseScope } from "./useExerciseScope.js";
 // as Nutrition's screens). This layout only provides the persistent bottom
 // tab bar around whichever child route is active.
 export function ExerciseLayout() {
-  const { isCoach, linkBase } = useExerciseScope();
+  const { linkBase } = useExerciseScope();
   return (
     <div className="h-dvh flex flex-col">
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
         <Outlet />
       </div>
-      <ExerciseBottomNav linkBase={linkBase} isCoach={isCoach} />
+      <ExerciseBottomNav linkBase={linkBase} />
     </div>
   );
 }

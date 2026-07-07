@@ -5,7 +5,7 @@ import { AppHeader } from "../../components/AppHeader.jsx";
 
 const MODULES = [
   { to: "nutrition", icon: Apple, key: "module.nutrition", enabled: true },
-  { to: null, icon: Dumbbell, key: "module.exercise", enabled: false },
+  { to: "exercise", icon: Dumbbell, key: "module.exercise", enabled: true },
   { to: null, icon: Moon, key: "module.sleep", enabled: false },
   { to: null, icon: Scale, key: "module.bodyComp", enabled: false },
 ];

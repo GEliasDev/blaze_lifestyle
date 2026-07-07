@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Filter, Plus, AlertCircle, Calendar, Check, Clock, UtensilsCrossed, X } from "lucide-react";
+import { Filter, AlertCircle, Calendar, Check, Clock, UtensilsCrossed, X } from "lucide-react";
 import { api } from "../../lib/api.js";
 import { AppHeader } from "../../components/AppHeader.jsx";
 import { ListSkeleton } from "../../components/Skeleton.jsx";
@@ -26,9 +26,8 @@ function endOfDayISO(dayStr) { return new Date(`${dayStr}T23:59:59.999`).toISOSt
 
 export function NutritionScreen({ refreshKey } = {}) {
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
   const { id: activeId } = useParams();
-  const { apiBase, linkBase, isCoach } = useNutritionScope();
+  const { apiBase, linkBase, isCoach, clientId } = useNutritionScope();
   const [entries, setEntries] = useState(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [categories, setCategories] = useState([]);
@@ -41,7 +40,13 @@ export function NutritionScreen({ refreshKey } = {}) {
   // load. "Load more" pushes this back another DEFAULT_WINDOW_DAYS.
   const [windowFrom, setWindowFrom] = useState(() => daysBefore(todayKey(), DEFAULT_WINDOW_DAYS - 1));
   const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(false);
+  // Day (YYYY-MM-DD) of the closest entry older than the loaded window, or
+  // null if there isn't one. Driving "Load more" off the actual next entry
+  // (instead of blindly stepping back DEFAULT_WINDOW_DAYS every click) avoids
+  // a bug where a long gap in logging history (e.g. stopped for a few months)
+  // made the button take several no-op clicks before it finally reached the
+  // next real entry, looking like it "does nothing".
+  const [nextEntryDay, setNextEntryDay] = useState(null);
   const usingExplicitRange = Boolean(dayFrom || dayTo);
 
   // refreshKey changes when add/edit/delete succeed elsewhere (see
@@ -59,17 +64,22 @@ export function NutritionScreen({ refreshKey } = {}) {
   // loaded window — a cheap limit:1 probe avoids showing a button that would
   // just reload the same (empty) range when the client has < 30 days of history.
   useEffect(() => {
-    if (usingExplicitRange) { setHasMore(false); return; }
+    if (usingExplicitRange) { setNextEntryDay(null); return; }
     let active = true;
     api.get(apiBase, { to: endOfDayISO(daysBefore(windowFrom, 1)), limit: 1 })
-      .then((older) => { if (active) setHasMore(older.length > 0); })
-      .catch(() => { if (active) setHasMore(false); });
+      .then((older) => { if (active) setNextEntryDay(older.length > 0 ? dayKey(older[0].eatenAt) : null); })
+      .catch(() => { if (active) setNextEntryDay(null); });
     return () => { active = false; };
   }, [apiBase, refreshKey, usingExplicitRange, windowFrom]);
 
   async function loadMore() {
+    if (!nextEntryDay) return;
     setLoadingMore(true);
-    const nextFrom = daysBefore(windowFrom, DEFAULT_WINDOW_DAYS);
+    // Normally step back a flat DEFAULT_WINDOW_DAYS, but if the next known
+    // entry is further back than that step would reach (a gap in logging),
+    // jump straight to a window that includes it instead.
+    const candidateFrom = daysBefore(windowFrom, DEFAULT_WINDOW_DAYS);
+    const nextFrom = nextEntryDay < candidateFrom ? daysBefore(nextEntryDay, DEFAULT_WINDOW_DAYS - 1) : candidateFrom;
     try {
       const data = await api.get(apiBase, { from: startOfDayISO(nextFrom), to: endOfDayISO(todayKey()) });
       setEntries(data);
@@ -111,9 +121,26 @@ export function NutritionScreen({ refreshKey } = {}) {
     return map;
   }, [filtered, days]);
 
+  const filterAction = (
+    <button
+      onClick={() => setFilterOpen((v) => !v)}
+      aria-label={t("nav.filter")}
+      aria-pressed={filterOpen}
+      className={`min-h-[44px] min-w-[44px] flex items-center justify-center ${filterOpen ? "text-primary" : "text-white/80"}`}
+    >
+      <Filter className="w-6 h-6" />
+    </button>
+  );
+
   return (
     <>
-      <AppHeader title="NUTRITION TRACKER" showBack={isCoach} backTo={isCoach ? "/coach" : null} />
+      <AppHeader
+        title="NUTRITION TRACKER"
+        showBack={isCoach}
+        backTo={isCoach ? `/coach/clients/${clientId}` : null}
+        desktopBackTo={isCoach ? "/coach" : null}
+        action={filterAction}
+      />
 
       <div className="flex-1 overflow-y-auto bg-muted">
         {!entries ? <ListSkeleton /> : days.length === 0 ? (
@@ -159,7 +186,7 @@ export function NutritionScreen({ refreshKey } = {}) {
             </section>
           ))
         )}
-        {entries && hasMore && (
+        {entries && nextEntryDay && (
           <div className="p-3">
             <button
               onClick={loadMore}
@@ -242,24 +269,6 @@ export function NutritionScreen({ refreshKey } = {}) {
           </div>
         </div>
       )}
-
-      <div className="sticky bottom-0 z-30 border-t-2 border-border bg-white p-3 flex items-center justify-center gap-6">
-        <button
-          onClick={() => setFilterOpen((v) => !v)}
-          aria-label={t("nav.filter")}
-          aria-pressed={filterOpen}
-          className={`min-h-[44px] min-w-[44px] flex items-center justify-center border-2 transition-colors ${filterOpen ? "border-primary text-primary" : "border-transparent text-ink/60"}`}
-        >
-          <Filter className="w-6 h-6" />
-        </button>
-        <button
-          onClick={() => navigate(`${linkBase}/add`)}
-          aria-label={t("meal.new")}
-          className="min-h-[56px] min-w-[56px] flex items-center justify-center bg-primary text-white rounded-full transition-transform active:scale-95 motion-reduce:active:scale-100"
-        >
-          <Plus className="w-7 h-7" />
-        </button>
-      </div>
     </>
   );
 }

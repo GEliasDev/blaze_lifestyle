@@ -11,7 +11,7 @@ const modules = [
   { to: "/body-comp", icon: Scale, key: "module.bodyComp" },
 ];
 
-export function AppHeader({ title, showBack = false, backTo = null, action = null }) {
+export function AppHeader({ title, showBack = false, backTo = null, desktopBackTo = backTo, action = null }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { logout } = useAuth();
@@ -25,7 +25,13 @@ export function AppHeader({ title, showBack = false, backTo = null, action = nul
   }, [open]);
 
   return (
-    <header className="sticky top-0 z-30 bg-ink text-white">
+    // z-40, not z-30: the hamburger drawer below is `fixed z-50` but nested
+    // *inside* this header, so its z-50 only wins against the header's own
+    // children — against a sibling module bottom-nav bar (also sticky z-30,
+    // e.g. NutritionBottomNav/ExerciseBottomNav) it's this header's own
+    // z-index that has to be higher, or the bottom nav paints over the
+    // drawer's Settings/Logout footer.
+    <header className="sticky top-0 z-40 bg-ink text-white">
       {/* Mobile: full bar with hamburger + branding. */}
       <div className="flex items-center gap-2 p-4 lg:hidden">
         {showBack ? (
@@ -47,7 +53,7 @@ export function AppHeader({ title, showBack = false, backTo = null, action = nul
       {/* Desktop: compact pane header — module navigation lives in the sidebar. */}
       <div className="hidden lg:flex items-center gap-3 px-4 h-14 border-b-2 border-white/10">
         {showBack && (
-          <button onClick={() => (backTo ? navigate(backTo) : navigate(-1))} aria-label={t("common.back")} className="min-h-[44px] min-w-[44px] flex items-center justify-center -ml-2">
+          <button onClick={() => (desktopBackTo ? navigate(desktopBackTo) : navigate(-1))} aria-label={t("common.back")} className="min-h-[44px] min-w-[44px] flex items-center justify-center -ml-2">
             <ChevronLeft className="w-6 h-6" />
           </button>
         )}

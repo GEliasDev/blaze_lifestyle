@@ -13,7 +13,7 @@ export function ExerciseEntryDetailScreen() {
   const { id } = useParams();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { isCoach, apiBase, linkBase } = useExerciseScope();
+  const { apiBase, linkBase } = useExerciseScope();
   const [entry, setEntry] = useState(null);
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -30,11 +30,11 @@ export function ExerciseEntryDetailScreen() {
     finally { setDeleting(false); }
   }
 
-  const editAction = !isCoach ? (
+  const editAction = (
     <button onClick={() => navigate(`${linkBase}/${id}/edit`)} className="bg-primary text-white font-heading uppercase tracking-wide text-sm px-4 min-h-[40px] rounded-full">
       {t("exercise.edit")}
     </button>
-  ) : null;
+  );
 
   if (entry === null) return (<><AppHeader title={t("exercise.detail").toUpperCase()} showBack backTo={backTo} /><Spinner /></>);
   if (entry === false) return (<><AppHeader title={t("exercise.detail").toUpperCase()} showBack backTo={backTo} /><p className="p-8 text-center text-ink/50">{t("exercise.noEntries")}</p></>);
@@ -67,11 +67,9 @@ export function ExerciseEntryDetailScreen() {
               <p className="text-ink/80">{entry.biofeedback}</p>
             </section>
           )}
-          {!isCoach && (
-            <button onClick={() => setConfirming(true)} className="w-full min-h-[44px] px-4 font-heading uppercase tracking-wide border-2 border-danger text-danger flex items-center justify-center gap-2">
-              <Trash2 className="w-5 h-5" />{t("exercise.delete")}
-            </button>
-          )}
+          <button onClick={() => setConfirming(true)} className="w-full min-h-[44px] px-4 font-heading uppercase tracking-wide border-2 border-danger text-danger flex items-center justify-center gap-2">
+            <Trash2 className="w-5 h-5" />{t("exercise.delete")}
+          </button>
         </div>
       </div>
 

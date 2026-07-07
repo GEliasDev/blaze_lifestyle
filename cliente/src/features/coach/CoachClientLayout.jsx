@@ -34,7 +34,9 @@ export function CoachClientLayout() {
           <NavLink to="nutrition" className={({ isActive }) => `${ROW} ${isActive ? "text-primary" : "text-white/80"}`}>
             <Apple className="w-5 h-5" />{t("module.nutrition")}
           </NavLink>
-          <div className={`${ROW} text-white/30`}><Dumbbell className="w-5 h-5" />{t("module.exercise")}</div>
+          <NavLink to="exercise" className={({ isActive }) => `${ROW} ${isActive ? "text-primary" : "text-white/80"}`}>
+            <Dumbbell className="w-5 h-5" />{t("module.exercise")}
+          </NavLink>
           <div className={`${ROW} text-white/30`}><Moon className="w-5 h-5" />{t("module.sleep")}</div>
           <div className={`${ROW} text-white/30`}><Scale className="w-5 h-5" />{t("module.bodyComp")}</div>
         </nav>

@@ -51,9 +51,14 @@ export const nutritionService = {
 
   async listEntries(clientId, range = {}) {
     const eatenAt = {};
-    if (range.from) eatenAt[Op.gte] = range.from;
-    if (range.to) eatenAt[Op.lte] = range.to;
-    const where = { clientId, ...(Object.keys(eatenAt).length ? { eatenAt } : {}) };
+    let hasRange = false;
+    // Op.gte/Op.lte are Symbol keys — Object.keys(eatenAt) can't see them, so
+    // that used to always read as "no range" and silently drop this filter
+    // entirely (every list call returned the client's whole history). Track
+    // whether a bound was actually set with a plain boolean instead.
+    if (range.from) { eatenAt[Op.gte] = range.from; hasRange = true; }
+    if (range.to) { eatenAt[Op.lte] = range.to; hasRange = true; }
+    const where = { clientId, ...(hasRange ? { eatenAt } : {}) };
     const entries = await MealEntryModel.findAll({
       where,
       order: [["eaten_at", "DESC"]],

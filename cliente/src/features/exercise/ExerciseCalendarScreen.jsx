@@ -7,22 +7,23 @@ import { Spinner } from "../../components/Spinner.jsx";
 import { AuthImage } from "../../components/AuthImage.jsx";
 import { api } from "../../lib/api.js";
 import { useExerciseScope } from "./useExerciseScope.js";
+import { DAY_NAMES, readWeekStartsOn } from "./weekStartsOn.js";
 
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 function startOfDayISO(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x.toISOString(); }
 function endOfDayISO(d) { const x = new Date(d); x.setHours(23, 59, 59, 999); return x.toISOString(); }
 function dayKey(iso) { return new Date(iso).toLocaleDateString("en-CA"); }
 
-// Month grid starting on Monday, matching the mockup's default weekStartsOn=1.
-function getCalendarDays(monthDate) {
+// Month grid starting on whichever day the "week starts on" filter picked
+// (defaults to Monday, matching the mockup's default weekStartsOn=1).
+function getCalendarDays(monthDate, weekStartsOn) {
   const year = monthDate.getFullYear();
   const month = monthDate.getMonth();
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
   const startDate = new Date(firstDay);
-  const dow = (firstDay.getDay() + 6) % 7;
+  const dow = (firstDay.getDay() - weekStartsOn + 7) % 7;
   startDate.setDate(startDate.getDate() - dow);
   const weeksNeeded = Math.ceil((dow + lastDay.getDate()) / 7);
   const days = [];
@@ -37,9 +38,15 @@ export function ExerciseCalendarScreen() {
   const { isCoach, clientId, apiBase, linkBase } = useExerciseScope();
   const [monthDate, setMonthDate] = useState(new Date());
   const [entries, setEntries] = useState(null);
-  const [selectedDay, setSelectedDay] = useState(null);
+  // Default to today selected, matching the initial month shown, instead of
+  // making the user tap a day before seeing anything.
+  const [selectedDay, setSelectedDay] = useState(new Date());
+  // The "week starts on" filter lives on the Home screen (ExerciseHomeScreen)
+  // but applies here too — read whatever was last stored there.
+  const [weekStartsOn] = useState(readWeekStartsOn);
 
-  const calendarDays = useMemo(() => getCalendarDays(monthDate), [monthDate]);
+  const adjustedDayNames = [...DAY_NAMES.slice(weekStartsOn), ...DAY_NAMES.slice(0, weekStartsOn)];
+  const calendarDays = useMemo(() => getCalendarDays(monthDate, weekStartsOn), [monthDate, weekStartsOn]);
 
   useEffect(() => {
     const from = calendarDays[0];
@@ -76,6 +83,7 @@ export function ExerciseCalendarScreen() {
         backTo={isCoach ? `/coach/clients/${clientId}` : null}
         desktopBackTo={isCoach ? "/coach" : null}
       />
+
       <div className="flex-1 overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b-2 border-border">
           <button onClick={() => navigateMonth(-1)} aria-label={t("common.back")} className="min-h-[44px] min-w-[44px] flex items-center justify-center">
@@ -89,7 +97,7 @@ export function ExerciseCalendarScreen() {
 
         <div className="p-4 border-b-2 border-border">
           <div className="grid grid-cols-7 gap-1 mb-2">
-            {DAY_NAMES.map((d) => <div key={d} className="text-center text-xs font-heading uppercase text-ink/50">{d}</div>)}
+            {adjustedDayNames.map((d) => <div key={d} className="text-center text-xs font-heading uppercase text-ink/50">{d}</div>)}
           </div>
           {entries === null ? <Spinner /> : entries === false ? (
             <p className="text-ink/50 text-sm text-center py-8">{t("common.error")}</p>

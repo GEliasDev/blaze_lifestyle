@@ -119,7 +119,10 @@ export const routes = [
             children: [
               { index: true, element: <ExerciseHomeScreen /> },
               { path: "calendar", element: <ExerciseCalendarScreen /> },
+              { path: "tags", element: <ExerciseTagsScreen /> },
+              { path: "add", element: <ExerciseAddScreen /> },
               { path: ":id", element: <ExerciseEntryDetailScreen /> },
+              { path: ":id/edit", element: <ExerciseEditEntryScreen /> },
             ],
           },
         ],
