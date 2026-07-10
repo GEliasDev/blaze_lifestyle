@@ -14,7 +14,14 @@ export function ExerciseHomeScreen() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [weekStartsOn, setWeekStartsOn] = useState(readWeekStartsOn);
 
-  useEffect(() => { api.get(statsBase).then(setStats).catch(() => setStats(false)); }, [statsBase]);
+  // Stats are bucketed server-side by calendar day — send this browser's own
+  // timeZone (and the weekStartsOn preference below) so "today"/"this week"
+  // match what this user sees everywhere else in the app, not the server's.
+  useEffect(() => {
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    setStats(null);
+    api.get(statsBase, { timeZone, weekStartsOn }).then(setStats).catch(() => setStats(false));
+  }, [statsBase, weekStartsOn]);
 
   function changeWeekStartsOn(day) {
     setWeekStartsOn(day);

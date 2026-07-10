@@ -31,8 +31,11 @@ async function serialize(entry) {
     id: entry.id,
     clientId: entry.clientId,
     exercisedAt: entry.exercisedAt,
+    title: entry.title,
     description: entry.description,
     biofeedback: entry.biofeedback,
+    feeling: entry.feeling,
+    hasAlert: entry.hasAlert,
     photos: photos.map((p) => ({ storageKey: p.storageKey, thumbKey: p.thumbKey, position: p.position })),
     tags: tags.map(serializeTag),
   };
@@ -64,8 +67,29 @@ async function ownedEntry(clientId, id) {
   return entry;
 }
 
-function dayKey(date) {
-  return new Date(date).toLocaleDateString("en-CA");
+// Formats a date as YYYY-MM-DD *as seen in `timeZone`*, not the server's own
+// zone — this is what makes "today"/"this week" match the requesting user's
+// calendar regardless of where the server happens to be hosted. Falls back to
+// UTC if `timeZone` isn't a valid IANA name (defensive: it's client-supplied).
+function dayKeyInTz(date, timeZone) {
+  try {
+    return new Date(date).toLocaleDateString("en-CA", { timeZone });
+  } catch {
+    return new Date(date).toLocaleDateString("en-CA", { timeZone: "UTC" });
+  }
+}
+
+// Both `key` and the result are YYYY-MM-DD strings. Parsing/formatting a
+// date-only string with no offset is inherently timezone-agnostic — the
+// server's local zone shifts both ends of a subtraction identically, so day
+// counts and day-of-week come out right regardless of server timezone.
+function addDaysToKey(key, n) {
+  const d = new Date(`${key}T00:00:00`);
+  d.setDate(d.getDate() + n);
+  return d.toLocaleDateString("en-CA");
+}
+function daysBetweenKeys(fromKey, toKey) {
+  return Math.round((new Date(`${toKey}T00:00:00`) - new Date(`${fromKey}T00:00:00`)) / 86400000);
 }
 
 export const exerciseService = {
@@ -74,8 +98,11 @@ export const exerciseService = {
     const entry = await ExerciseEntryModel.create({
       clientId,
       exercisedAt: data.exercisedAt ?? new Date(),
+      title: data.title,
       description: data.description,
       biofeedback: data.biofeedback || null,
+      feeling: data.feeling || null,
+      hasAlert: data.hasAlert ?? false,
     });
     await addPhotos(entry.id, files, 0);
     await setTags(entry.id, data.tagIds);
@@ -115,6 +142,7 @@ export const exerciseService = {
     const entry = await ownedEntry(clientId, id);
     const data = editEntrySchema.parse(rawBody);
     if (data.biofeedback === "") data.biofeedback = null;
+    if (data.feeling === "") data.feeling = null;
 
     const existing = await photosFor(id);
     const keep = new Set(keepKeys);
@@ -171,37 +199,52 @@ export const exerciseService = {
   },
 
   // Year: distinct trained days this year ÷ days elapsed this year.
-  // Week: distinct trained days this week ÷ days elapsed this week (Monday start).
+  // Week: distinct trained days this week ÷ days elapsed this week (respects
+  // the client's weekStartsOn preference — see ExerciseHomeScreen/weekStartsOn.js).
   // weeklyChart: one { week, days } entry per elapsed week of the year so far —
-  // same shape as the mockup's getWeeklyChartData().
-  async stats(clientId) {
-    const now = new Date();
-    const yearStart = new Date(now.getFullYear(), 0, 1);
-    const entries = await ExerciseEntryModel.findAll({
-      where: { clientId, exercisedAt: { [Op.gte]: yearStart, [Op.lte]: now } },
-    });
-    const trainedDays = new Set(entries.map((e) => dayKey(e.exercisedAt)));
-    const yearElapsedDays = Math.floor((now - yearStart) / 86400000) + 1;
-    const yearTrainedDays = trainedDays.size;
+  // same shape as the mockup's getWeeklyChartData(); its 7-day buckets always
+  // start at Jan 1 (an elapsed-week view of the year), independent of weekStartsOn.
+  //
+  // Everything is bucketed by calendar day **in the client's timeZone**, not
+  // the server's — otherwise a client whose local day has already rolled over
+  // (or hasn't yet) relative to the server disagrees with its own Calendar
+  // screen about which day/week an entry near midnight belongs to.
+  async stats(clientId, { timeZone = "UTC", weekStartsOn = 1 } = {}) {
+    const todayKey = dayKeyInTz(new Date(), timeZone);
+    const yearStartKey = `${todayKey.slice(0, 4)}-01-01`;
+    const dow = (new Date(`${todayKey}T00:00:00`).getDay() - weekStartsOn + 7) % 7;
+    const weekStartKey = addDaysToKey(todayKey, -dow);
+    // The current week can start before Jan 1 (e.g. today is Jan 2, week
+    // starts Sunday Dec 28) — query from whichever boundary is earlier so
+    // those days aren't silently excluded from the week count.
+    const queryFromKey = weekStartKey < yearStartKey ? weekStartKey : yearStartKey;
 
-    const weekStart = new Date(now);
-    const dow = (weekStart.getDay() + 6) % 7; // Monday = 0
-    weekStart.setDate(weekStart.getDate() - dow);
-    weekStart.setHours(0, 0, 0, 0);
-    const weekElapsedDays = Math.floor((now - weekStart) / 86400000) + 1;
-    const weekTrainedDays = [...trainedDays].filter((d) => new Date(`${d}T00:00:00`) >= weekStart).length;
+    // Wide UTC bounds around the intended range purely to limit what the DB
+    // returns — a ±1 day buffer comfortably covers every real UTC offset
+    // (-12 to +14h). Precise bucketing happens in JS below via dayKeyInTz.
+    const queryFrom = new Date(new Date(`${queryFromKey}T00:00:00Z`).getTime() - 86400000);
+    const queryTo = new Date(Date.now() + 86400000);
+    const entries = await ExerciseEntryModel.findAll({
+      where: { clientId, exercisedAt: { [Op.gte]: queryFrom, [Op.lte]: queryTo } },
+    });
+
+    const dayKeys = entries
+      .map((e) => dayKeyInTz(e.exercisedAt, timeZone))
+      .filter((k) => k >= queryFromKey && k <= todayKey);
+
+    const yearDayKeys = new Set(dayKeys.filter((k) => k >= yearStartKey));
+    const yearTrainedDays = yearDayKeys.size;
+    const yearElapsedDays = daysBetweenKeys(yearStartKey, todayKey) + 1;
+
+    const weekTrainedDays = new Set(dayKeys.filter((k) => k >= weekStartKey)).size;
+    const weekElapsedDays = dow + 1;
 
     const weeksNeeded = Math.ceil(yearElapsedDays / 7);
     const weeklyChart = [];
     for (let week = 1; week <= weeksNeeded; week++) {
-      const wStart = new Date(yearStart);
-      wStart.setDate(yearStart.getDate() + (week - 1) * 7);
-      const wEnd = new Date(wStart);
-      wEnd.setDate(wStart.getDate() + 6);
-      const days = [...trainedDays].filter((d) => {
-        const dt = new Date(`${d}T00:00:00`);
-        return dt >= wStart && dt <= wEnd;
-      }).length;
+      const wStart = addDaysToKey(yearStartKey, (week - 1) * 7);
+      const wEnd = addDaysToKey(yearStartKey, week * 7 - 1);
+      const days = [...yearDayKeys].filter((k) => k >= wStart && k <= wEnd).length;
       weeklyChart.push({ week, days });
     }
 

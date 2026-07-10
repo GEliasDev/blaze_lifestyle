@@ -3,9 +3,11 @@ import { useTranslation } from "react-i18next";
 import { Apple, Dumbbell, Moon, Scale, ChevronRight } from "lucide-react";
 import { AppHeader } from "../../components/AppHeader.jsx";
 
+// Exercise is temporarily locked (see EXERCISE_LOCKED in app/router.jsx) —
+// keep this in sync while that flag is on.
 const MODULES = [
   { to: "nutrition", icon: Apple, key: "module.nutrition", enabled: true },
-  { to: "exercise", icon: Dumbbell, key: "module.exercise", enabled: true },
+  { to: null, icon: Dumbbell, key: "module.exercise", enabled: false, messageKey: "module.underMaintenance" },
   { to: null, icon: Moon, key: "module.sleep", enabled: false },
   { to: null, icon: Scale, key: "module.bodyComp", enabled: false },
 ];
@@ -21,7 +23,7 @@ export function CoachClientHome() {
     <>
       <AppHeader title={client ? client.name.toUpperCase() : t("coach.client").toUpperCase()} showBack backTo="/coach" />
       <div className="flex-1 p-3 space-y-3 lg:hidden">
-        {MODULES.map(({ to, icon: Icon, key, enabled }) =>
+        {MODULES.map(({ to, icon: Icon, key, enabled, messageKey }) =>
           enabled ? (
             <Link
               key={key}
@@ -36,7 +38,7 @@ export function CoachClientHome() {
             <div key={key} className="flex items-center gap-3 bg-muted border-2 border-border p-4 text-ink/40">
               <Icon className="w-5 h-5" />
               <span className="flex-1 font-heading uppercase tracking-wide font-bold">{t(key)}</span>
-              <span className="text-xs">{t("module.empty")}</span>
+              <span className="text-xs">{t(messageKey ?? "module.empty")}</span>
             </div>
           )
         )}

@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../lib/auth.jsx";
 import { Button } from "../../components/Button.jsx";
+import { BackLink } from "../../components/BackLink.jsx";
 
 const field = "w-full p-3 border-2 border-ink rounded-none";
 
@@ -31,12 +32,14 @@ export function RegisterScreen() {
 
   if (coachCode) {
     return (
-      <div className="mx-auto max-w-[430px] p-6 space-y-4 text-center">
-        <img src="/logo-white.webp" alt="Blaze Lifestyle" className="h-28 w-auto mx-auto mb-2" />
-        <h1 className="font-heading uppercase tracking-wide text-2xl">{t("register.yourCode")}</h1>
-        <div className="border-2 border-primary text-primary font-heading text-3xl tracking-[0.3em] py-4">{coachCode}</div>
-        <p className="text-ink/70 text-sm">{t("register.shareCode")}</p>
-        <Button variant="primary" className="w-full" onClick={() => navigate("/coach")}>{t("register.continue")}</Button>
+      <div className="min-h-dvh flex items-center justify-center p-4">
+        <div className="w-full max-w-[430px] space-y-4 text-center">
+          <img src="/logo-white.webp" alt="Blaze Lifestyle" className="h-28 w-auto mx-auto mb-2" />
+          <h1 className="font-heading uppercase tracking-wide text-2xl">{t("register.yourCode")}</h1>
+          <div className="border-2 border-primary text-primary font-heading text-3xl tracking-[0.3em] py-4">{coachCode}</div>
+          <p className="text-ink/70 text-sm">{t("register.shareCode")}</p>
+          <Button variant="primary" className="w-full" onClick={() => navigate("/coach")}>{t("register.continue")}</Button>
+        </div>
       </div>
     );
   }
@@ -49,26 +52,33 @@ export function RegisterScreen() {
   );
 
   return (
-    <form onSubmit={onSubmit} className="mx-auto max-w-[430px] p-4 space-y-4">
-      <img src="/logo-white.webp" alt="Blaze Lifestyle" className="h-28 w-auto mx-auto mb-2" />
-      <h1 className="font-heading uppercase tracking-wide text-2xl">{t("register.title")}</h1>
-      <label className="block space-y-1"><span className="font-heading uppercase text-sm">{t("register.name")}</span>
-        <input aria-label={t("register.name")} value={form.name} onChange={set("name")} className={field} required /></label>
-      <label className="block space-y-1"><span className="font-heading uppercase text-sm">{t("auth.email")}</span>
-        <input aria-label={t("auth.email")} type="email" value={form.email} onChange={set("email")} className={field} required /></label>
-      <label className="block space-y-1"><span className="font-heading uppercase text-sm">{t("auth.password")}</span>
-        <input aria-label={t("auth.password")} type="password" value={form.password} onChange={set("password")} className={field} required minLength={8} /></label>
-      <div className="space-y-1">
-        <span className="font-heading uppercase text-sm">{t("register.role")}</span>
-        <div className="flex gap-2">{roleBtn("client", t("register.asClient"))}{roleBtn("coach", t("register.asCoach"))}</div>
+    <div className="min-h-dvh relative flex items-center justify-center p-4">
+      <div className="absolute top-4 left-4">
+        <BackLink to="/">{t("common.back")}</BackLink>
       </div>
-      {form.role === "client" && (
-        <label className="block space-y-1"><span className="font-heading uppercase text-sm">{t("register.coachCode")}</span>
-          <input aria-label={t("register.coachCode")} value={form.coachCode} onChange={set("coachCode")} className={field} /></label>
-      )}
-      {error && <p role="alert" className="text-danger">{error}</p>}
-      <Button type="submit" variant="primary" className="w-full">{t("register.submit")}</Button>
-      <button type="button" onClick={() => navigate("/login")} className="w-full text-sm text-ink/70 underline">{t("register.haveAccount")}</button>
-    </form>
+      <form onSubmit={onSubmit} className="w-full max-w-[430px] space-y-4">
+        <Link to="/" className="block w-fit mx-auto mb-2">
+          <img src="/logo-white.webp" alt="Blaze Lifestyle" className="h-28 w-auto" />
+        </Link>
+        <h1 className="font-heading uppercase tracking-wide text-2xl">{t("register.title")}</h1>
+        <label className="block space-y-1"><span className="font-heading uppercase text-sm">{t("register.name")}</span>
+          <input aria-label={t("register.name")} value={form.name} onChange={set("name")} className={field} required /></label>
+        <label className="block space-y-1"><span className="font-heading uppercase text-sm">{t("auth.email")}</span>
+          <input aria-label={t("auth.email")} type="email" value={form.email} onChange={set("email")} className={field} required /></label>
+        <label className="block space-y-1"><span className="font-heading uppercase text-sm">{t("auth.password")}</span>
+          <input aria-label={t("auth.password")} type="password" value={form.password} onChange={set("password")} className={field} required minLength={8} /></label>
+        <div className="space-y-1">
+          <span className="font-heading uppercase text-sm">{t("register.role")}</span>
+          <div className="flex gap-2">{roleBtn("client", t("register.asClient"))}{roleBtn("coach", t("register.asCoach"))}</div>
+        </div>
+        {form.role === "client" && (
+          <label className="block space-y-1"><span className="font-heading uppercase text-sm">{t("register.coachCode")}</span>
+            <input aria-label={t("register.coachCode")} value={form.coachCode} onChange={set("coachCode")} className={field} /></label>
+        )}
+        {error && <p role="alert" className="text-danger">{error}</p>}
+        <Button type="submit" variant="primary" className="w-full">{t("register.submit")}</Button>
+        <button type="button" onClick={() => navigate("/login")} className="w-full text-sm text-ink/70 underline">{t("register.haveAccount")}</button>
+      </form>
+    </div>
   );
 }

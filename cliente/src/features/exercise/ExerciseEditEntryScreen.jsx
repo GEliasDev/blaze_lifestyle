@@ -9,6 +9,7 @@ import { Spinner } from "../../components/Spinner.jsx";
 import { Button } from "../../components/Button.jsx";
 import { AuthImage } from "../../components/AuthImage.jsx";
 import { useExerciseScope } from "./useExerciseScope.js";
+import { FEELINGS } from "./feelings.js";
 
 const MAX_PHOTOS = 5;
 
@@ -25,17 +26,25 @@ export function ExerciseEditEntryScreen() {
   const [form, setForm] = useState(null);
   const [kept, setKept] = useState([]);
   const [newFiles, setNewFiles] = useState([]);
-  const [selectedTagIds, setSelectedTagIds] = useState([]);
+  const [selectedTagId, setSelectedTagId] = useState(null);
+  const [feeling, setFeeling] = useState("");
+  const [hasAlert, setHasAlert] = useState(false);
   const [saving, setSaving] = useState(false);
   const [compressing, setCompressing] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     api.get("/exercise-tags").then(setTags).catch(() => setTags([]));
     api.get(`${apiBase}/${id}`).then((e) => {
       setEntry(e);
       setKept(e.photos);
-      setSelectedTagIds(e.tags.map((tg) => tg.id));
-      setForm({ date: dateOf(e.exercisedAt), time: timeOf(e.exercisedAt), description: e.description, biofeedback: e.biofeedback ?? "" });
+      // Older entries could have more than one tag from before this screen
+      // was restricted to a single selection — keep just the first on load;
+      // saving will collapse it down to that one.
+      setSelectedTagId(e.tags[0]?.id ?? null);
+      setFeeling(e.feeling ?? "");
+      setHasAlert(e.hasAlert);
+      setForm({ date: dateOf(e.exercisedAt), time: timeOf(e.exercisedAt), title: e.title, description: e.description, biofeedback: e.biofeedback ?? "" });
     }).catch(() => setEntry(false));
   }, [apiBase, id]);
 
@@ -43,11 +52,11 @@ export function ExerciseEditEntryScreen() {
   if (entry === false) return (<><AppHeader title={t("exercise.editEntry").toUpperCase()} showBack /><p className="p-8 text-center text-ink/50">{t("exercise.noEntries")}</p></>);
 
   function set(patch) { setForm((f) => ({ ...f, ...patch })); }
-  function toggleTag(tagId) { setSelectedTagIds((prev) => (prev.includes(tagId) ? prev.filter((x) => x !== tagId) : [...prev, tagId])); }
+  function toggleTag(tagId) { setSelectedTagId((prev) => (prev === tagId ? null : tagId)); }
 
   const newPreviews = newFiles.map((f) => ({ f, url: URL.createObjectURL(f) }));
   const total = kept.length + newFiles.length;
-  const canSave = selectedTagIds.length > 0 && form.description.trim() && !saving && !compressing;
+  const canSave = selectedTagId && form.title.trim() && form.description.trim() && !saving && !compressing;
 
   async function onFilesPicked(fileList) {
     setCompressing(true);
@@ -61,14 +70,19 @@ export function ExerciseEditEntryScreen() {
 
   async function onSave() {
     setSaving(true);
+    setError(null);
     const fd = new FormData();
-    selectedTagIds.forEach((tid) => fd.append("tagIds", tid));
+    fd.append("tagIds", selectedTagId);
     fd.append("exercisedAt", new Date(`${form.date}T${form.time}:00`).toISOString());
+    fd.append("title", form.title.trim());
     fd.append("description", form.description.trim());
     fd.append("biofeedback", form.biofeedback.trim());
+    fd.append("feeling", feeling);
+    fd.append("hasAlert", String(hasAlert));
     kept.forEach((p) => fd.append("keep", p.storageKey));
     newFiles.forEach((f) => fd.append("photos", f));
     try { await api.patchForm(`${apiBase}/${id}`, fd); navigate(`${linkBase}/${id}`); }
+    catch (err) { setError(err.message || t("common.error")); }
     finally { setSaving(false); }
   }
 
@@ -108,14 +122,14 @@ export function ExerciseEditEntryScreen() {
         </section>
 
         <section className="space-y-2">
-          <h3 className="font-heading uppercase tracking-wide text-sm">{t("exercise.tags")} <span className="text-danger">*</span></h3>
+          <h3 className="font-heading uppercase tracking-wide text-sm">{t("exercise.tag")} <span className="text-danger">*</span></h3>
           <div className="flex flex-wrap gap-2">
             {tags.map((tag) => (
               <button
                 key={tag.id}
                 type="button"
                 onClick={() => toggleTag(tag.id)}
-                className={`px-3 py-2 text-sm font-heading uppercase tracking-wide border-2 ${selectedTagIds.includes(tag.id) ? `bg-${tag.color} text-white border-transparent` : "bg-white text-ink border-ink"}`}
+                className={`px-3 py-2 text-sm font-heading uppercase tracking-wide border-2 ${selectedTagId === tag.id ? `bg-${tag.color} text-white border-transparent` : "bg-white text-ink border-ink"}`}
               >
                 {tag.name}
               </button>
@@ -134,19 +148,66 @@ export function ExerciseEditEntryScreen() {
         </section>
 
         <section className="space-y-2">
+          <h3 className="font-heading uppercase tracking-wide text-sm">{t("exercise.title")} <span className="text-danger">*</span></h3>
+          <input value={form.title} onChange={(e) => set({ title: e.target.value })} placeholder={t("exercise.titleHint")}
+            className="w-full p-3 border-2 border-border rounded-none font-bold bg-white" />
+        </section>
+
+        <section className="space-y-2">
           <h3 className="font-heading uppercase tracking-wide text-sm">{t("exercise.description")}</h3>
           <textarea value={form.description} onChange={(e) => set({ description: e.target.value })} rows={3} className="w-full p-3 border-2 border-border rounded-none resize-none" />
         </section>
 
         <section className="space-y-2">
           <h3 className="font-heading uppercase tracking-wide text-sm">{t("exercise.biofeedback")}</h3>
-          <textarea value={form.biofeedback} onChange={(e) => set({ biofeedback: e.target.value })} rows={3} className="w-full p-3 border-2 border-border rounded-none resize-none" />
+          <textarea value={form.biofeedback} onChange={(e) => set({ biofeedback: e.target.value })} rows={3}
+            placeholder={t("exercise.biofeedbackHint")}
+            className="w-full p-3 border-2 border-border rounded-none resize-none" />
+          <div className="flex justify-center gap-4 pt-1">
+            {FEELINGS.map(({ value, icon: Icon, labelKey }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setFeeling((prev) => (prev === value ? "" : value))}
+                aria-label={t(labelKey)}
+                aria-pressed={feeling === value}
+                className={`w-14 h-14 flex items-center justify-center border-2 ${feeling === value ? "bg-primary text-white border-primary" : "bg-white text-ink border-ink"}`}
+              >
+                <Icon className="w-7 h-7" />
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="space-y-2">
+          <h3 className="font-heading uppercase tracking-wide text-sm">{t("exercise.alertQuestion")}</h3>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setHasAlert(true)}
+              aria-pressed={hasAlert}
+              className={`flex-1 px-3 min-h-[44px] border-2 font-heading uppercase tracking-wide ${hasAlert ? "bg-danger text-white border-danger" : "bg-white text-ink border-ink"}`}
+            >
+              {t("exercise.alertYes")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setHasAlert(false)}
+              aria-pressed={!hasAlert}
+              className={`flex-1 px-3 min-h-[44px] border-2 font-heading uppercase tracking-wide ${!hasAlert ? "bg-primary text-white border-primary" : "bg-white text-ink border-ink"}`}
+            >
+              {t("exercise.alertNo")}
+            </button>
+          </div>
         </section>
       </div>
 
-      <div className="sticky bottom-0 z-30 bg-white p-4 border-t-2 border-border flex gap-3">
-        <Button variant="primary" className="flex-1" disabled={!canSave} onClick={onSave}>{t("exercise.saveChanges")}</Button>
-        <Button variant="secondary" className="flex-1" onClick={() => navigate(`${linkBase}/${id}`)}>{t("common.cancel")}</Button>
+      <div className="sticky bottom-0 z-30 bg-white p-4 border-t-2 border-border space-y-2">
+        {error && <p role="alert" className="text-danger text-sm">{error}</p>}
+        <div className="flex gap-3">
+          <Button variant="primary" className="flex-1" disabled={!canSave} onClick={onSave}>{t("exercise.saveChanges")}</Button>
+          <Button variant="secondary" className="flex-1" onClick={() => navigate(`${linkBase}/${id}`)}>{t("common.cancel")}</Button>
+        </div>
       </div>
     </>
   );

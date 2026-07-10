@@ -34,6 +34,7 @@ export function AddMealScreen() {
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
   const [compressing, setCompressing] = useState(false);
+  const [error, setError] = useState(null);
 
   const previews = files.map((f) => ({ f, url: URL.createObjectURL(f) }));
   const canSave = category && !saving && !compressing;
@@ -54,6 +55,7 @@ export function AddMealScreen() {
 
   async function onSave() {
     setSaving(true);
+    setError(null);
     const form = new FormData();
     form.append("category", category);
     form.append("eatenAt", eatenAtISO());
@@ -61,6 +63,7 @@ export function AddMealScreen() {
     if (description.trim()) form.append("description", description.trim());
     files.forEach((f) => form.append("photos", f));
     try { await api.postForm(apiBase, form); refreshList(); navigate(linkBase); }
+    catch (err) { setError(err.message || t("common.error")); }
     finally { setSaving(false); }
   }
 
@@ -131,7 +134,8 @@ export function AddMealScreen() {
         </section>
       </div>
 
-      <div className="sticky bottom-0 z-30 bg-white p-4 border-t-2 border-border">
+      <div className="sticky bottom-0 z-30 bg-white p-4 border-t-2 border-border space-y-2">
+        {error && <p role="alert" className="text-danger text-sm">{error}</p>}
         <Button variant="primary" className="w-full" disabled={!canSave} onClick={onSave}>{t("meal.save")}</Button>
       </div>
     </>

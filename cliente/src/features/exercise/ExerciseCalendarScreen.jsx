@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { AlertCircle, ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { AppHeader } from "../../components/AppHeader.jsx";
 import { Spinner } from "../../components/Spinner.jsx";
 import { AuthImage } from "../../components/AuthImage.jsx";
@@ -85,41 +85,43 @@ export function ExerciseCalendarScreen() {
       />
 
       <div className="flex-1 overflow-y-auto">
-        <div className="flex items-center justify-between p-4 border-b-2 border-border">
-          <button onClick={() => navigateMonth(-1)} aria-label={t("common.back")} className="min-h-[44px] min-w-[44px] flex items-center justify-center">
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <h2 className="font-heading uppercase tracking-wide text-lg">{MONTH_NAMES[monthDate.getMonth()]} {monthDate.getFullYear()}</h2>
-          <button onClick={() => navigateMonth(1)} aria-label={t("exercise.nextMonth")} className="min-h-[44px] min-w-[44px] flex items-center justify-center">
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="p-4 border-b-2 border-border">
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {adjustedDayNames.map((d) => <div key={d} className="text-center text-xs font-heading uppercase text-ink/50">{d}</div>)}
+        <div className="max-w-lg mx-auto">
+          <div className="flex items-center justify-between p-3 border-b-2 border-border">
+            <button onClick={() => navigateMonth(-1)} aria-label={t("common.back")} className="min-h-[44px] min-w-[44px] flex items-center justify-center">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <h2 className="font-heading uppercase tracking-wide text-lg">{MONTH_NAMES[monthDate.getMonth()]} {monthDate.getFullYear()}</h2>
+            <button onClick={() => navigateMonth(1)} aria-label={t("exercise.nextMonth")} className="min-h-[44px] min-w-[44px] flex items-center justify-center">
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
-          {entries === null ? <Spinner /> : entries === false ? (
-            <p className="text-ink/50 text-sm text-center py-8">{t("common.error")}</p>
-          ) : (
-            <div className="grid grid-cols-7 gap-1">
-              {calendarDays.map((date, i) => {
-                const isCurrentMonth = date.getMonth() === monthDate.getMonth();
-                const key = date.toLocaleDateString("en-CA");
-                const hasEntries = Boolean(entriesByDay[key]?.length);
-                const isSelected = selectedKey === key;
-                return (
-                  <button
-                    key={i}
-                    onClick={() => setSelectedDay(date)}
-                    className={`aspect-square flex items-center justify-center text-sm border-2 ${isCurrentMonth ? `text-ink ${isSelected ? "border-primary" : hasEntries ? "border-ink bg-ink text-white" : "border-transparent"}` : "text-ink/30 border-transparent"}`}
-                  >
-                    {date.getDate()}
-                  </button>
-                );
-              })}
+
+          <div className="p-3 border-b-2 border-border">
+            <div className="grid grid-cols-7 gap-1 mb-2">
+              {adjustedDayNames.map((d) => <div key={d} className="text-center text-xs font-heading uppercase text-ink/50">{d}</div>)}
             </div>
-          )}
+            {entries === null ? <Spinner /> : entries === false ? (
+              <p className="text-ink/50 text-sm text-center py-8">{t("common.error")}</p>
+            ) : (
+              <div className="grid grid-cols-7 gap-1">
+                {calendarDays.map((date, i) => {
+                  const isCurrentMonth = date.getMonth() === monthDate.getMonth();
+                  const key = date.toLocaleDateString("en-CA");
+                  const hasEntries = Boolean(entriesByDay[key]?.length);
+                  const isSelected = selectedKey === key;
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => setSelectedDay(date)}
+                      className={`aspect-square flex items-center justify-center text-sm border-2 ${isCurrentMonth ? `text-ink ${isSelected ? "border-primary" : hasEntries ? "border-ink bg-ink text-white" : "border-transparent"}` : "text-ink/30 border-transparent"}`}
+                    >
+                      {date.getDate()}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="p-4 space-y-3">
@@ -142,7 +144,11 @@ export function ExerciseCalendarScreen() {
                   </span>
                 </div>
                 {entry.photos[0] && <AuthImage path={`/photos/${entry.photos[0].thumbKey}`} className="w-16 h-16 object-cover border-2 border-border mb-2" />}
-                <p className="text-sm">{entry.description}</p>
+                <div className="flex items-center gap-2">
+                  <span className="font-heading uppercase tracking-wide font-bold">{entry.title}</span>
+                  {entry.hasAlert && <AlertCircle className="w-4 h-4 text-danger shrink-0" />}
+                </div>
+                <p className="text-sm text-ink/70 line-clamp-2">{entry.description}</p>
               </button>
             ))
           )}

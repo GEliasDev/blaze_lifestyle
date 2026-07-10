@@ -35,6 +35,7 @@ export function EditEntryScreen() {
   const [newFiles, setNewFiles] = useState([]); // newly added File objects
   const [saving, setSaving] = useState(false);
   const [compressing, setCompressing] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     api.get(`${apiBase}/${id}`).then((e) => {
@@ -77,6 +78,7 @@ export function EditEntryScreen() {
 
   async function onSave() {
     setSaving(true);
+    setError(null);
     const fd = new FormData();
     fd.append("category", form.category);
     fd.append("eatenAt", eatenAtISO());
@@ -87,6 +89,7 @@ export function EditEntryScreen() {
     kept.forEach((p) => fd.append("keep", p.storageKey));
     newFiles.forEach((f) => fd.append("photos", f));
     try { await api.patchForm(`${apiBase}/${id}`, fd); refreshList(); navigate(`${linkBase}/${id}`); }
+    catch (err) { setError(err.message || t("common.error")); }
     finally { setSaving(false); }
   }
 
@@ -175,9 +178,12 @@ export function EditEntryScreen() {
         </section>
       </div>
 
-      <div className="sticky bottom-0 z-30 bg-white p-4 border-t-2 border-border flex gap-3">
-        <Button variant="primary" className="flex-1" disabled={!canSave} onClick={onSave}>{t("meal.saveChanges")}</Button>
-        <Button variant="secondary" className="flex-1" onClick={() => navigate(`${linkBase}/${id}`)}>{t("common.cancel")}</Button>
+      <div className="sticky bottom-0 z-30 bg-white p-4 border-t-2 border-border space-y-2">
+        {error && <p role="alert" className="text-danger text-sm">{error}</p>}
+        <div className="flex gap-3">
+          <Button variant="primary" className="flex-1" disabled={!canSave} onClick={onSave}>{t("meal.saveChanges")}</Button>
+          <Button variant="secondary" className="flex-1" onClick={() => navigate(`${linkBase}/${id}`)}>{t("common.cancel")}</Button>
+        </div>
       </div>
     </>
   );

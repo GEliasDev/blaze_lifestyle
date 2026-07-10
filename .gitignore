@@ -1,4 +1,5 @@
 node_modules/
+Cotizaciones/
 dist/
 .env
 .env.*

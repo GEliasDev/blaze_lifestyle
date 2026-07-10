@@ -1,5 +1,5 @@
 import { exerciseService } from "./exercise.service.js";
-import { listQuerySchema, createTagSchema } from "./exercise.schema.js";
+import { listQuerySchema, statsQuerySchema, createTagSchema } from "./exercise.schema.js";
 import { getObject } from "../../lib/storage.js";
 import { assertCoachOwnsClient } from "../../lib/ownership.js";
 
@@ -27,7 +27,7 @@ export const exerciseController = {
     catch (err) { next(err); }
   },
   async stats(req, res, next) {
-    try { res.json(await exerciseService.stats(req.user.sub)); }
+    try { res.json(await exerciseService.stats(req.user.sub, statsQuerySchema.parse(req.query))); }
     catch (err) { next(err); }
   },
   async photo(req, res, next) {
@@ -78,7 +78,7 @@ export const coachExerciseController = {
   async stats(req, res, next) {
     try {
       await assertCoachOwnsClient(req.user.sub, req.params.clientId);
-      res.json(await exerciseService.stats(req.params.clientId));
+      res.json(await exerciseService.stats(req.params.clientId, statsQuerySchema.parse(req.query)));
     } catch (err) { next(err); }
   },
 };

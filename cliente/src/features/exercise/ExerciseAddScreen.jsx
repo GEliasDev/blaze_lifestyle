@@ -7,6 +7,7 @@ import { compressImages } from "../../lib/imageCompress.js";
 import { AppHeader } from "../../components/AppHeader.jsx";
 import { Button } from "../../components/Button.jsx";
 import { useExerciseScope } from "./useExerciseScope.js";
+import { FEELINGS } from "./feelings.js";
 
 const MAX_PHOTOS = 5;
 
@@ -21,19 +22,23 @@ export function ExerciseAddScreen() {
   const [files, setFiles] = useState([]);
   const [date, setDate] = useState(today());
   const [time, setTime] = useState(now());
-  const [selectedTagIds, setSelectedTagIds] = useState([]);
+  const [selectedTagId, setSelectedTagId] = useState(null);
+  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [biofeedback, setBiofeedback] = useState("");
+  const [feeling, setFeeling] = useState("");
+  const [hasAlert, setHasAlert] = useState(false);
   const [saving, setSaving] = useState(false);
   const [compressing, setCompressing] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => { api.get("/exercise-tags").then(setTags).catch(() => setTags([])); }, []);
 
   const previews = files.map((f) => ({ f, url: URL.createObjectURL(f) }));
-  const canSave = selectedTagIds.length > 0 && description.trim() && !saving && !compressing;
+  const canSave = selectedTagId && title.trim() && description.trim() && !saving && !compressing;
 
   function toggleTag(id) {
-    setSelectedTagIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    setSelectedTagId((prev) => (prev === id ? null : id));
   }
 
   async function onFilesPicked(fileList) {
@@ -48,13 +53,18 @@ export function ExerciseAddScreen() {
 
   async function onSave() {
     setSaving(true);
+    setError(null);
     const form = new FormData();
-    selectedTagIds.forEach((id) => form.append("tagIds", id));
+    form.append("tagIds", selectedTagId);
     form.append("exercisedAt", new Date(`${date}T${time}:00`).toISOString());
+    form.append("title", title.trim());
     form.append("description", description.trim());
     if (biofeedback.trim()) form.append("biofeedback", biofeedback.trim());
+    if (feeling) form.append("feeling", feeling);
+    form.append("hasAlert", String(hasAlert));
     files.forEach((f) => form.append("photos", f));
     try { await api.postForm(apiBase, form); navigate(linkBase); }
+    catch (err) { setError(err.message || t("common.error")); }
     finally { setSaving(false); }
   }
 
@@ -86,7 +96,7 @@ export function ExerciseAddScreen() {
         </section>
 
         <section className="space-y-2">
-          <h3 className="font-heading uppercase tracking-wide text-sm">{t("exercise.tags")} <span className="text-danger">*</span></h3>
+          <h3 className="font-heading uppercase tracking-wide text-sm">{t("exercise.tag")} <span className="text-danger">*</span></h3>
           {tags === null ? <p className="text-sm text-ink/50">{t("common.loading")}</p> : (
             <div className="flex flex-wrap gap-2">
               {tags.map((tag) => (
@@ -94,7 +104,7 @@ export function ExerciseAddScreen() {
                   key={tag.id}
                   type="button"
                   onClick={() => toggleTag(tag.id)}
-                  className={`px-3 py-2 text-sm font-heading uppercase tracking-wide border-2 ${selectedTagIds.includes(tag.id) ? `bg-${tag.color} text-white border-transparent` : "bg-white text-ink border-ink"}`}
+                  className={`px-3 py-2 text-sm font-heading uppercase tracking-wide border-2 ${selectedTagId === tag.id ? `bg-${tag.color} text-white border-transparent` : "bg-white text-ink border-ink"}`}
                 >
                   {tag.name}
                 </button>
@@ -114,6 +124,12 @@ export function ExerciseAddScreen() {
         </section>
 
         <section className="space-y-2">
+          <h3 className="font-heading uppercase tracking-wide text-sm">{t("exercise.title")} <span className="text-danger">*</span></h3>
+          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("exercise.titleHint")}
+            className="w-full p-3 border-2 border-border rounded-none font-bold bg-white" />
+        </section>
+
+        <section className="space-y-2">
           <h3 className="font-heading uppercase tracking-wide text-sm">{t("exercise.description")} <span className="text-danger">*</span></h3>
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3}
             placeholder={t("exercise.descriptionHint")}
@@ -125,10 +141,47 @@ export function ExerciseAddScreen() {
           <textarea value={biofeedback} onChange={(e) => setBiofeedback(e.target.value)} rows={3}
             placeholder={t("exercise.biofeedbackHint")}
             className="w-full p-3 border-2 border-border rounded-none resize-none" />
+          <div className="flex justify-center gap-4 pt-1">
+            {FEELINGS.map(({ value, icon: Icon, labelKey }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setFeeling((prev) => (prev === value ? "" : value))}
+                aria-label={t(labelKey)}
+                aria-pressed={feeling === value}
+                className={`w-14 h-14 flex items-center justify-center border-2 ${feeling === value ? "bg-primary text-white border-primary" : "bg-white text-ink border-ink"}`}
+              >
+                <Icon className="w-7 h-7" />
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="space-y-2">
+          <h3 className="font-heading uppercase tracking-wide text-sm">{t("exercise.alertQuestion")}</h3>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setHasAlert(true)}
+              aria-pressed={hasAlert}
+              className={`flex-1 px-3 min-h-[44px] border-2 font-heading uppercase tracking-wide ${hasAlert ? "bg-danger text-white border-danger" : "bg-white text-ink border-ink"}`}
+            >
+              {t("exercise.alertYes")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setHasAlert(false)}
+              aria-pressed={!hasAlert}
+              className={`flex-1 px-3 min-h-[44px] border-2 font-heading uppercase tracking-wide ${!hasAlert ? "bg-primary text-white border-primary" : "bg-white text-ink border-ink"}`}
+            >
+              {t("exercise.alertNo")}
+            </button>
+          </div>
         </section>
       </div>
 
-      <div className="sticky bottom-0 z-30 bg-white p-4 border-t-2 border-border">
+      <div className="sticky bottom-0 z-30 bg-white p-4 border-t-2 border-border space-y-2">
+        {error && <p role="alert" className="text-danger text-sm">{error}</p>}
         <Button variant="primary" className="w-full" disabled={!canSave} onClick={onSave}>{t("exercise.save")}</Button>
       </div>
     </>

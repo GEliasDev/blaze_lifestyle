@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Trash2 } from "lucide-react";
+import { AlertTriangle, Check, Trash2 } from "lucide-react";
 import { api } from "../../lib/api.js";
 import { AppHeader } from "../../components/AppHeader.jsx";
 import { Spinner } from "../../components/Spinner.jsx";
 import { Button } from "../../components/Button.jsx";
 import { PhotoCarousel } from "../../components/PhotoCarousel.jsx";
 import { useExerciseScope } from "./useExerciseScope.js";
+import { FEELINGS } from "./feelings.js";
 
 export function ExerciseEntryDetailScreen() {
   const { id } = useParams();
@@ -41,6 +42,7 @@ export function ExerciseEntryDetailScreen() {
 
   const date = new Date(entry.exercisedAt).toLocaleDateString(i18n.language, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const time = new Date(entry.exercisedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const feeling = FEELINGS.find((f) => f.value === entry.feeling);
 
   return (
     <>
@@ -48,6 +50,7 @@ export function ExerciseEntryDetailScreen() {
       <div className="flex-1 overflow-y-auto">
         <PhotoCarousel photos={entry.photos} />
         <div className="p-4 space-y-4">
+          <h2 className="font-heading text-xl font-bold">{entry.title}</h2>
           <div className="flex flex-wrap gap-2">
             {entry.tags.map((tag) => (
               <span key={tag.id} className={`px-2 py-1 text-xs text-white bg-${tag.color}`}>{tag.name}</span>
@@ -61,10 +64,24 @@ export function ExerciseEntryDetailScreen() {
             <h3 className="font-heading uppercase tracking-wide text-sm mb-1">{t("exercise.description")}</h3>
             <p className="text-ink/80">{entry.description}</p>
           </section>
-          {entry.biofeedback && (
-            <section className="border-2 border-border p-3">
-              <h3 className="font-heading uppercase tracking-wide text-sm mb-1">{t("exercise.biofeedback")}</h3>
-              <p className="text-ink/80">{entry.biofeedback}</p>
+          <section className="border-2 border-border p-3">
+            <h3 className="font-heading uppercase tracking-wide text-sm mb-2">{t("exercise.alertLabel")}</h3>
+            <div className={`flex items-center gap-2 font-heading uppercase tracking-wide text-sm ${entry.hasAlert ? "text-danger" : "text-ink/70"}`}>
+              {entry.hasAlert ? <AlertTriangle className="w-5 h-5" /> : <Check className="w-5 h-5" />}
+              <span>{entry.hasAlert ? t("exercise.alertYes") : t("exercise.alertNo")}</span>
+            </div>
+          </section>
+          {(entry.biofeedback || feeling) && (
+            <section className="border-2 border-border p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="font-heading uppercase tracking-wide text-sm">{t("exercise.biofeedback")}</h3>
+                {feeling && (
+                  <span className="flex items-center gap-1 text-ink/70 text-sm">
+                    <feeling.icon className="w-5 h-5" />{t(feeling.labelKey)}
+                  </span>
+                )}
+              </div>
+              {entry.biofeedback && <p className="text-ink/80">{entry.biofeedback}</p>}
             </section>
           )}
           <button onClick={() => setConfirming(true)} className="w-full min-h-[44px] px-4 font-heading uppercase tracking-wide border-2 border-danger text-danger flex items-center justify-center gap-2">

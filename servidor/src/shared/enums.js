@@ -2,6 +2,7 @@ export const ROLES = ["client", "coach"];
 export const LOCALES = ["es", "en"];
 export const MEAL_CATEGORIES = ["Breakfast", "AM Snack", "Lunch", "PM Snack", "Dinner", "Supplement"];
 export const COMPLIANCE = ["yes", "no", "na"];
+export const EXERCISE_FEELINGS = ["sad", "neutral", "happy"];
 
 export const TAG_COLOR_PALETTE = [
   "blue-500", "purple-500", "red-500", "green-500", "yellow-500", "orange-500",

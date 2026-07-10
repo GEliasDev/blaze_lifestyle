@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../lib/auth.jsx";
+import { LandingScreen } from "../features/landing/LandingScreen.jsx";
 import { LoginScreen } from "../features/auth/LoginScreen.jsx";
 import { RegisterScreen } from "../features/auth/RegisterScreen.jsx";
 import { CoachLayout } from "../features/coach/CoachLayout.jsx";
@@ -22,6 +23,26 @@ import { CoachClientLayout } from "../features/coach/CoachClientLayout.jsx";
 import { CoachClientHome } from "../features/coach/CoachClientHome.jsx";
 import { SettingsScreen } from "../features/account/SettingsScreen.jsx";
 
+// Temporary: Exercise is locked for both roles while it's reworked. Flip this
+// back to false to restore the normal routes/children below.
+const EXERCISE_LOCKED = true;
+const exerciseRoute = (path) => (
+  EXERCISE_LOCKED
+    ? { path, element: <ModulePlaceholder titleKey="module.exercise" messageKey="module.underMaintenance" /> }
+    : {
+        path,
+        element: <ExerciseLayout />,
+        children: [
+          { index: true, element: <ExerciseHomeScreen /> },
+          { path: "calendar", element: <ExerciseCalendarScreen /> },
+          { path: "tags", element: <ExerciseTagsScreen /> },
+          { path: "add", element: <ExerciseAddScreen /> },
+          { path: ":id", element: <ExerciseEntryDetailScreen /> },
+          { path: ":id/edit", element: <ExerciseEditEntryScreen /> },
+        ],
+      }
+);
+
 function RequireRole({ role }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
@@ -29,9 +50,11 @@ function RequireRole({ role }) {
   return <Outlet />;
 }
 
+// "/" is the public landing page for logged-out visitors; a logged-in user
+// lands straight on their dashboard instead of seeing marketing copy again.
 function RoleHome() {
   const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <LandingScreen />;
   return <Navigate to={user.role === "coach" ? "/coach" : "/nutrition"} replace />;
 }
 
@@ -67,18 +90,7 @@ export const routes = [
               { path: ":id/edit", element: <EditEntryScreen /> },
             ],
           },
-          {
-            path: "/exercise",
-            element: <ExerciseLayout />,
-            children: [
-              { index: true, element: <ExerciseHomeScreen /> },
-              { path: "calendar", element: <ExerciseCalendarScreen /> },
-              { path: "tags", element: <ExerciseTagsScreen /> },
-              { path: "add", element: <ExerciseAddScreen /> },
-              { path: ":id", element: <ExerciseEntryDetailScreen /> },
-              { path: ":id/edit", element: <ExerciseEditEntryScreen /> },
-            ],
-          },
+          exerciseRoute("/exercise"),
           { path: "/sleep", element: <ModulePlaceholder titleKey="module.sleep" /> },
           { path: "/body-comp", element: <ModulePlaceholder titleKey="module.bodyComp" /> },
           { path: "/settings", element: <SettingsScreen /> },
@@ -113,18 +125,7 @@ export const routes = [
               { path: ":id/edit", element: <EditEntryScreen /> },
             ],
           },
-          {
-            path: "exercise",
-            element: <ExerciseLayout />,
-            children: [
-              { index: true, element: <ExerciseHomeScreen /> },
-              { path: "calendar", element: <ExerciseCalendarScreen /> },
-              { path: "tags", element: <ExerciseTagsScreen /> },
-              { path: "add", element: <ExerciseAddScreen /> },
-              { path: ":id", element: <ExerciseEntryDetailScreen /> },
-              { path: ":id/edit", element: <ExerciseEditEntryScreen /> },
-            ],
-          },
+          exerciseRoute("exercise"),
         ],
       },
     ],
