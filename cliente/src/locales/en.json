@@ -14,6 +14,7 @@
   "register": { "title": "Create account", "name": "Name", "role": "Account type", "asClient": "Client", "asCoach": "Coach", "coachCode": "Coach code (optional)", "submit": "Sign up", "haveAccount": "Already have an account? Log in", "noAccount": "No account? Sign up", "yourCode": "Your coach code", "shareCode": "Share it with your clients so they can link to you.", "continue": "Continue" },
   "evidence": { "title": "Upload evidence", "assigned": "Assigned meal", "upload": "Upload evidence", "pending": "Pending", "done": "Evidence uploaded", "addPhotos": "Add photo(s)", "symptoms": "I had digestive discomfort", "symptomsDesc": "Describe symptoms", "save": "Send evidence", "viewEntry": "View evidence" },
   "common": { "back": "Back", "loading": "Loading…", "cancel": "Cancel", "save": "Save", "error": "Couldn't load. Check your connection.", "retry": "Retry", "somethingWrong": "Something went wrong", "unexpectedError": "An unexpected error occurred. Please try again.", "reload": "Reload" },
+  "update": { "available": "A new version is available.", "action": "Update" },
   "landing": {
     "navLogin": "Log In",
     "navSignup": "Sign Up",

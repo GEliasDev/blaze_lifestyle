@@ -78,11 +78,14 @@ function RoleHome() {
 
 // Client shell. Mobile: centered column, navigation via the header hamburger.
 // Desktop (lg+): persistent module sidebar on the left + content on the right.
+// h-dvh (not min-h-dvh) so this is capped to exactly the viewport height —
+// otherwise mobile overscroll bounce can drag the whole page (and any sticky
+// bottom nav inside it) along with the gesture instead of staying put.
 function ClientShell() {
   return (
-    <div className="min-h-dvh bg-white lg:grid lg:grid-cols-[220px_1fr]">
+    <div className="h-dvh flex flex-col lg:grid lg:grid-cols-[220px_1fr] bg-white">
       <ClientSidebar />
-      <div className="min-w-0 flex flex-col min-h-dvh mx-auto w-full max-w-[480px] lg:max-w-none lg:mx-0">
+      <div className="min-w-0 flex-1 min-h-0 flex flex-col overflow-hidden mx-auto w-full max-w-[480px] lg:max-w-none lg:mx-0">
         <Outlet />
       </div>
     </div>

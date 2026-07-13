@@ -6,4 +6,8 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Belt-and-suspenders alongside each layout's own h-dvh containment: without
+   this, mobile browsers can still rubber-band the whole page a few pixels on
+   overscroll, dragging a sticky bottom nav along with the bounce. */
+html, body, #root { height: 100%; overscroll-behavior-y: contain; }
 body { @apply font-body text-ink bg-white; }
