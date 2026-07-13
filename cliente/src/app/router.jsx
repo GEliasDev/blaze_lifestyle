@@ -25,7 +25,7 @@ import { SettingsScreen } from "../features/account/SettingsScreen.jsx";
 
 // Temporary: Exercise is locked for both roles while it's reworked. Flip this
 // back to false to restore the normal routes/children below.
-const EXERCISE_LOCKED = true;
+const EXERCISE_LOCKED = false;
 const exerciseRoute = (path) => (
   EXERCISE_LOCKED
     ? { path, element: <ModulePlaceholder titleKey="module.exercise" messageKey="module.underMaintenance" /> }

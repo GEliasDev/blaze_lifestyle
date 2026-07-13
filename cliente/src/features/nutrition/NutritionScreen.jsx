@@ -142,65 +142,8 @@ export function NutritionScreen({ refreshKey } = {}) {
         action={filterAction}
       />
 
-      <div className="flex-1 overflow-y-auto bg-muted">
-        {!entries ? <ListSkeleton /> : days.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-8 text-center">
-            <UtensilsCrossed className="w-12 h-12 text-ink/20 mb-4" />
-            <p className="font-heading uppercase text-ink/50">{t("entry.noEntries")}</p>
-          </div>
-        ) : (
-          days.map((d) => (
-            <section key={d}>
-              <h2 className="sticky top-0 z-10 bg-ink/90 text-white px-4 py-2 font-heading uppercase tracking-wide text-sm">{formatDate(d)}</h2>
-              <div className="p-3 space-y-3">
-                {byDay[d].map((e) => (
-                  <Link key={e.id} to={`${linkBase}/${e.id}`} className={`relative flex gap-3 bg-white border-2 p-3 hover:border-primary ${e.id === activeId ? "border-primary" : "border-border"}`}>
-                    <div className="relative w-20 h-20 shrink-0">
-                      {e.photos?.[0]
-                        ? <AuthImage path={`/photos/${e.photos[0].thumbKey}`} className="w-20 h-20 object-cover border-2 border-border" />
-                        : <div className="w-20 h-20 border-2 border-border bg-muted" />}
-                      {e.photos?.length > 1 && (
-                        <span className="absolute -bottom-1 -right-1 bg-primary text-white text-xs font-bold px-1">+{e.photos.length - 1}</span>
-                      )}
-                    </div>
-                    <div className={`flex-1 min-w-0 ${e.compliance === "yes" ? "pr-8" : ""}`}>
-                      <div className="flex items-center gap-2">
-                        <span className="font-heading uppercase tracking-wide font-bold">{t(`category.${e.category}`)}</span>
-                        {e.hasSymptoms && <AlertCircle className="w-4 h-4 text-danger shrink-0" />}
-                      </div>
-                      {e.description && <p className="text-sm text-ink/70 mt-1 line-clamp-2">{e.description}</p>}
-                      <div className="flex items-center gap-1 text-sm font-bold text-ink mt-2"><Clock className="w-4 h-4" />{timeOf(e.eatenAt)}</div>
-                    </div>
-                    {e.compliance === "yes" && (
-                      <span
-                        role="img"
-                        aria-label={t("meal.complianceYes")}
-                        className="absolute bottom-2 right-2 flex items-center justify-center"
-                      >
-                        <Check className="w-5 h-5 text-success" strokeWidth={3} />
-                      </span>
-                    )}
-                  </Link>
-                ))}
-              </div>
-            </section>
-          ))
-        )}
-        {entries && nextEntryDay && (
-          <div className="p-3">
-            <button
-              onClick={loadMore}
-              disabled={loadingMore}
-              className="w-full min-h-[44px] border-2 border-border bg-white font-heading uppercase tracking-wide text-sm text-ink/70 disabled:opacity-50"
-            >
-              {loadingMore ? t("common.loading") : t("meal.loadMore")}
-            </button>
-          </div>
-        )}
-      </div>
-
       {filterOpen && (
-        <div className="bg-muted border-t-2 border-primary p-3 space-y-3">
+        <div className="bg-muted border-b-2 border-primary p-3 space-y-3 overflow-y-auto">
           <div className="flex flex-wrap gap-2">
             {CATEGORIES.map((c) => (
               <button
@@ -269,6 +212,63 @@ export function NutritionScreen({ refreshKey } = {}) {
           </div>
         </div>
       )}
+
+      <div className="flex-1 overflow-y-auto bg-muted">
+        {!entries ? <ListSkeleton /> : days.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-8 text-center">
+            <UtensilsCrossed className="w-12 h-12 text-ink/20 mb-4" />
+            <p className="font-heading uppercase text-ink/50">{t("entry.noEntries")}</p>
+          </div>
+        ) : (
+          days.map((d) => (
+            <section key={d}>
+              <h2 className="sticky top-0 z-10 bg-ink/90 text-white px-4 py-2 font-heading uppercase tracking-wide text-sm">{formatDate(d)}</h2>
+              <div className="p-3 space-y-3">
+                {byDay[d].map((e) => (
+                  <Link key={e.id} to={`${linkBase}/${e.id}`} className={`relative flex gap-3 bg-white border-2 p-3 hover:border-primary ${e.id === activeId ? "border-primary" : "border-border"}`}>
+                    <div className="relative w-20 h-20 shrink-0">
+                      {e.photos?.[0]
+                        ? <AuthImage path={`/photos/${e.photos[0].thumbKey}`} className="w-20 h-20 object-cover border-2 border-border" />
+                        : <div className="w-20 h-20 border-2 border-border bg-muted" />}
+                      {e.photos?.length > 1 && (
+                        <span className="absolute -bottom-1 -right-1 bg-primary text-white text-xs font-bold px-1">+{e.photos.length - 1}</span>
+                      )}
+                    </div>
+                    <div className={`flex-1 min-w-0 ${e.compliance === "yes" ? "pr-8" : ""}`}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-heading uppercase tracking-wide font-bold">{t(`category.${e.category}`)}</span>
+                        {e.hasSymptoms && <AlertCircle className="w-4 h-4 text-danger shrink-0" />}
+                      </div>
+                      {e.description && <p className="text-sm text-ink/70 mt-1 line-clamp-2">{e.description}</p>}
+                      <div className="flex items-center gap-1 text-sm font-bold text-ink mt-2"><Clock className="w-4 h-4" />{timeOf(e.eatenAt)}</div>
+                    </div>
+                    {e.compliance === "yes" && (
+                      <span
+                        role="img"
+                        aria-label={t("meal.complianceYes")}
+                        className="absolute bottom-2 right-2 flex items-center justify-center"
+                      >
+                        <Check className="w-5 h-5 text-success" strokeWidth={3} />
+                      </span>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            </section>
+          ))
+        )}
+        {entries && nextEntryDay && (
+          <div className="p-3">
+            <button
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="w-full min-h-[44px] border-2 border-border bg-white font-heading uppercase tracking-wide text-sm text-ink/70 disabled:opacity-50"
+            >
+              {loadingMore ? t("common.loading") : t("meal.loadMore")}
+            </button>
+          </div>
+        )}
+      </div>
     </>
   );
 }
