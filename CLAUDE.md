@@ -191,6 +191,18 @@ names via `toLocaleDateString`) is English by the same switch, no separate handl
   proxy + Let's Encrypt SSL per-domain once DNS resolves.
 - CORS (`servidor/src/app.js`) reflects any request origin (`origin: true`) — no per-environment
   origin allowlist to maintain when domains change.
+- **Module flags / superuser panel:** one backend + one database serves local dev, the preview
+  deploy, and production, so `servidor/src/modules/admin/` scopes each module's on/off flag by
+  `environment` (`local`/`preview`/`production` — `APP_ENVIRONMENTS` in `servidor/src/shared/enums.js`)
+  instead of one shared switch for all three. The client reports its own environment via
+  `VITE_APP_ENV` (`cliente/src/lib/env.js`) — like `VITE_API_URL`, it's a **build arg**, not a
+  runtime env var, so it must be set per Coolify app and the frontend redeployed for changes to
+  take effect. Local dev needs nothing set (defaults to `"local"` automatically); the **preview**
+  Coolify app must explicitly set `VITE_APP_ENV=preview`, or it silently falls back to
+  `"production"` and shares production's flags. A superuser account (`SUPERUSER_EMAIL`/
+  `SUPERUSER_PASSWORD` in the backend's env vars — not a DB row) manages all three environments'
+  flags from one `/admin` screen via an environment picker, independent of which deployed frontend
+  they happen to log into.
 
 ## Testing
 

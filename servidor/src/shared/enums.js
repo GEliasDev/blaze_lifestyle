@@ -4,6 +4,12 @@ export const LOCALES = ["es", "en"];
 // the "coming soon" placeholder regardless of this flag), but are listed here
 // too so the admin panel already has a row ready for when they ship.
 export const MODULE_KEYS = ["nutrition", "exercise", "sleep", "bodyComp"];
+// One backend serves all three fronts (local dev, the preview deploy, and
+// production) sharing the same database — this lets module flags be toggled
+// independently per environment instead of one shared on/off switch for all
+// three. The client sends its own environment via VITE_APP_ENV (see
+// cliente/src/lib/env.js); local dev defaults to "local" with no env var needed.
+export const APP_ENVIRONMENTS = ["local", "preview", "production"];
 export const MEAL_CATEGORIES = ["Breakfast", "AM Snack", "Lunch", "PM Snack", "Dinner", "Supplement"];
 export const COMPLIANCE = ["yes", "no", "na"];
 export const EXERCISE_FEELINGS = ["sad", "neutral", "happy"];

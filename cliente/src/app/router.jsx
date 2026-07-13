@@ -89,6 +89,12 @@ export const routes = [
         element: <ClientShell />,
         children: [
           moduleRoute("/nutrition", "nutrition", "module.nutrition", <NutritionLayout />, [
+            // NutritionLayout renders its own list directly (no Outlet) when
+            // there's no further path — but react-router still needs a
+            // matching child route to select it as the layout at all, so
+            // this index route exists purely to satisfy that; its element is
+            // never actually used.
+            { index: true, element: null },
             { path: "add", element: <AddMealScreen /> },
             { path: ":id", element: <EntryDetailScreen /> },
             { path: ":id/edit", element: <EditEntryScreen /> },
@@ -133,6 +139,7 @@ export const routes = [
         children: [
           { index: true, element: <CoachClientHome /> },
           moduleRoute("nutrition", "nutrition", "module.nutrition", <NutritionLayout />, [
+            { index: true, element: null },
             { path: "add", element: <AddMealScreen /> },
             { path: ":id", element: <EntryDetailScreen /> },
             { path: ":id/edit", element: <EditEntryScreen /> },

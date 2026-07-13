@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { api } from "./api.js";
 import { useAuth } from "./auth.jsx";
+import { APP_ENV } from "./env.js";
 
 const Ctx = createContext(null);
 
@@ -15,7 +16,7 @@ export function ModuleFlagsProvider({ children }) {
   useEffect(() => {
     if (!user) { setFlags(null); return; }
     let active = true;
-    api.get("/module-flags").then((list) => {
+    api.get("/module-flags", { env: APP_ENV }).then((list) => {
       if (active) setFlags(Object.fromEntries(list.map((f) => [f.key, f.enabled])));
     }).catch(() => { if (active) setFlags({}); });
     return () => { active = false; };
