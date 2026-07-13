@@ -32,7 +32,7 @@ export function RegisterScreen() {
 
   if (coachCode) {
     return (
-      <div className="min-h-dvh flex items-center justify-center p-4">
+      <div className="h-dvh overflow-y-auto flex items-center justify-center p-4">
         <div className="w-full max-w-[430px] space-y-4 text-center">
           <img src="/logo-white.webp" alt="Blaze Lifestyle" className="h-28 w-auto mx-auto mb-2" />
           <h1 className="font-heading uppercase tracking-wide text-2xl">{t("register.yourCode")}</h1>
@@ -52,8 +52,8 @@ export function RegisterScreen() {
   );
 
   return (
-    <div className="min-h-dvh relative flex items-center justify-center p-4">
-      <div className="absolute top-4 left-4">
+    <div className="h-dvh overflow-y-auto relative flex items-center justify-center p-4">
+      <div className="fixed top-4 left-4 z-10">
         <BackLink to="/">{t("common.back")}</BackLink>
       </div>
       <form onSubmit={onSubmit} className="w-full max-w-[430px] space-y-4">

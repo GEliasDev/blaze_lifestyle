@@ -6,8 +6,14 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Belt-and-suspenders alongside each layout's own h-dvh containment: without
-   this, mobile browsers can still rubber-band the whole page a few pixels on
-   overscroll, dragging a sticky bottom nav along with the bounce. */
-html, body, #root { height: 100%; overscroll-behavior-y: contain; }
+/* Every screen in this app scrolls inside its own h-dvh-contained layout —
+   the document/body itself is never meant to scroll. That's easy to miss in
+   a regular mobile browser tab (its own address bar absorbs most of the
+   bounce), but installed as a standalone PWA there's no browser chrome left
+   to absorb it, so the OS's native rubber-band moves the page itself,
+   dragging a sticky bottom nav along with it. overscroll-behavior alone
+   isn't reliable enough for this in standalone WKWebView/Chrome — pinning
+   html/body/#root in place removes document-level scroll entirely, so
+   there's nothing left for the OS to bounce. */
+html, body, #root { position: fixed; inset: 0; height: 100%; overflow: hidden; overscroll-behavior: none; }
 body { @apply font-body text-ink bg-white; }

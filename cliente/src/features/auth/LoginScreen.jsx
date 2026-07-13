@@ -27,8 +27,8 @@ export function LoginScreen() {
   }
 
   return (
-    <div className="min-h-dvh relative flex items-center justify-center p-4">
-      <div className="absolute top-4 left-4">
+    <div className="h-dvh overflow-y-auto relative flex items-center justify-center p-4">
+      <div className="fixed top-4 left-4 z-10">
         <BackLink to="/">{t("common.back")}</BackLink>
       </div>
       <form onSubmit={onSubmit} className="w-full max-w-[430px] space-y-4">

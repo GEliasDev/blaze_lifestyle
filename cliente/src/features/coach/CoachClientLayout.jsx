@@ -21,7 +21,7 @@ export function CoachClientLayout() {
   }, [clientId]);
 
   return (
-    <div className="min-h-dvh bg-white lg:grid lg:grid-cols-[220px_1fr]">
+    <div className="h-dvh flex flex-col lg:grid lg:grid-cols-[220px_1fr] bg-white">
       <aside className="hidden lg:flex lg:flex-col lg:h-dvh lg:sticky lg:top-0 bg-ink text-white border-r-2 border-white/10">
         <div className="p-4 border-b-2 border-white/10">
           <NavLink to="/coach" className="flex items-center gap-1 mb-2 text-white/60 hover:text-white text-xs font-heading uppercase tracking-wide">
@@ -41,7 +41,7 @@ export function CoachClientLayout() {
           <div className={`${ROW} text-white/30`}><Scale className="w-5 h-5" />{t("module.bodyComp")}</div>
         </nav>
       </aside>
-      <div className="min-w-0"><Outlet context={client} /></div>
+      <div className="min-w-0 flex-1 min-h-0 flex flex-col overflow-hidden"><Outlet context={client} /></div>
     </div>
   );
 }

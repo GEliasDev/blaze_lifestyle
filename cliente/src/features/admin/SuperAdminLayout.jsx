@@ -7,8 +7,8 @@ export function SuperAdminLayout() {
   const { t } = useTranslation();
   const { logout } = useAuth();
   return (
-    <div className="min-h-dvh bg-white">
-      <header className="bg-ink text-white p-4 flex items-center justify-between">
+    <div className="h-dvh flex flex-col bg-white">
+      <header className="shrink-0 bg-ink text-white p-4 flex items-center justify-between">
         <div>
           <div className="font-heading font-bold tracking-wide text-lg">BLAZE LIFESTYLE</div>
           <div className="text-white/60 text-xs tracking-wide">SUPER ADMIN</div>
@@ -17,7 +17,9 @@ export function SuperAdminLayout() {
           <LogOut className="w-5 h-5" />{t("auth.logout")}
         </button>
       </header>
-      <Outlet />
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <Outlet />
+      </div>
     </div>
   );
 }
