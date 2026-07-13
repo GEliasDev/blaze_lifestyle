@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
+import { createBrowserRouter, Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../lib/auth.jsx";
 import { useModuleFlags } from "../lib/moduleFlags.jsx";
 import { Spinner } from "../components/Spinner.jsx";
@@ -33,10 +33,21 @@ import { SuperAdminModulesScreen } from "../features/admin/SuperAdminModulesScre
 // flashing the real module and then swapping to the placeholder a moment
 // later. Rendered as the pathless parent of a module's route subtree, so it
 // only needs one Outlet to hand off to the module's own layout.
+//
+// Flags are re-polled periodically (moduleFlags.jsx), so a module can flip
+// to disabled while someone is already using it. If they're mid-write (an
+// add/edit screen), don't yank the screen out from under them and lose
+// whatever they were typing — let them finish; the placeholder takes over
+// as soon as they navigate anywhere else. Read-only screens (list, detail)
+// have nothing to lose, so those switch over immediately.
 function ModuleGate({ moduleKey, titleKey }) {
   const { flags } = useModuleFlags();
+  const { pathname } = useLocation();
+  const isWriting = /\/(add|edit)(\/|$)/.test(pathname);
   if (flags === null) return <Spinner />;
-  if (flags[moduleKey] === false) return <ModulePlaceholder titleKey={titleKey} messageKey="module.underMaintenance" />;
+  if (flags[moduleKey] === false && !isWriting) {
+    return <ModulePlaceholder titleKey={titleKey} messageKey="module.underMaintenance" />;
+  }
   return <Outlet />;
 }
 
