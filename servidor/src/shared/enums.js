@@ -1,5 +1,9 @@
 export const ROLES = ["client", "coach"];
 export const LOCALES = ["es", "en"];
+// Superuser-toggleable modules — Sleep/BodyComp aren't built yet (always show
+// the "coming soon" placeholder regardless of this flag), but are listed here
+// too so the admin panel already has a row ready for when they ship.
+export const MODULE_KEYS = ["nutrition", "exercise", "sleep", "bodyComp"];
 export const MEAL_CATEGORIES = ["Breakfast", "AM Snack", "Lunch", "PM Snack", "Dinner", "Supplement"];
 export const COMPLIANCE = ["yes", "no", "na"];
 export const EXERCISE_FEELINGS = ["sad", "neutral", "happy"];

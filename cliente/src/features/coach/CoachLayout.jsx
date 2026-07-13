@@ -7,8 +7,8 @@ export function CoachLayout() {
   const { t } = useTranslation();
   const { logout } = useAuth();
   return (
-    <div className="min-h-dvh md:grid md:grid-cols-[260px_1fr]">
-      <aside className="bg-ink text-white md:min-h-dvh">
+    <div className="h-dvh flex flex-col md:grid md:grid-cols-[260px_1fr]">
+      <aside className="shrink-0 bg-ink text-white md:min-h-dvh">
         <div className="p-4">
           <div className="font-heading font-bold tracking-wide text-lg">BLAZE LIFESTYLE</div>
           <div className="text-white/60 text-xs tracking-wide">COACH PANEL</div>
@@ -25,7 +25,11 @@ export function CoachLayout() {
           </button>
         </nav>
       </aside>
-      <main className="bg-white"><Outlet /></main>
+      {/* flex-1 min-h-0 fills exactly the space left after the aside on
+          mobile; overflow-hidden means each routed screen owns its own
+          scroll region (and, for Tags, its own pinned bottom nav) instead of
+          the whole main scrolling and dragging a bottom nav along with it. */}
+      <main className="bg-white flex-1 min-h-0 flex flex-col overflow-hidden"><Outlet /></main>
     </div>
   );
 }

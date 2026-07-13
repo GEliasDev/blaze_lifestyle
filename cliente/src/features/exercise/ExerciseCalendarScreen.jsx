@@ -84,7 +84,10 @@ export function ExerciseCalendarScreen() {
         desktopBackTo={isCoach ? "/coach" : null}
       />
 
-      <div className="flex-1 overflow-y-auto">
+      {/* scrollbar-gutter reserves the scrollbar's width up front, so the
+          centered calendar below doesn't shift sideways when the entries
+          list grows enough to make this pane scroll. */}
+      <div className="flex-1 overflow-y-auto [scrollbar-gutter:stable]">
         <div className="max-w-lg mx-auto">
           <div className="flex items-center justify-between p-3 border-b-2 border-border">
             <button onClick={() => navigateMonth(-1)} aria-label={t("common.back")} className="min-h-[44px] min-w-[44px] flex items-center justify-center">
@@ -113,7 +116,7 @@ export function ExerciseCalendarScreen() {
                     <button
                       key={i}
                       onClick={() => setSelectedDay(date)}
-                      className={`aspect-square flex items-center justify-center text-sm border-2 ${isCurrentMonth ? `text-ink ${isSelected ? "border-primary" : hasEntries ? "border-ink bg-ink text-white" : "border-transparent"}` : "text-ink/30 border-transparent"}`}
+                      className={`aspect-square rounded-full flex items-center justify-center text-sm border-2 ${isCurrentMonth ? `text-ink ${isSelected ? "border-ink bg-transparent" : hasEntries ? "border-primary bg-primary text-white" : "border-transparent"}` : "text-ink/30 border-transparent"}`}
                     >
                       {date.getDate()}
                     </button>

@@ -69,7 +69,7 @@ export function EntryDetailScreen() {
           {entry.description && (
             <section className="border-2 border-border p-3">
               <h3 className="font-heading uppercase tracking-wide text-sm mb-1">{t("entry.description")}</h3>
-              <p className="text-ink/80">{entry.description}</p>
+              <p className="text-ink/80 whitespace-pre-line">{entry.description}</p>
             </section>
           )}
 
@@ -80,7 +80,7 @@ export function EntryDetailScreen() {
               <span>{entry.hasSymptoms ? t("meal.symptomsReported") : t("meal.noSymptoms")}</span>
             </div>
             {entry.hasSymptoms && entry.symptomDescription && (
-              <p className="mt-2 text-sm text-danger/90 border-2 border-danger/30 bg-danger/5 p-2">{entry.symptomDescription}</p>
+              <p className="mt-2 text-sm text-danger/90 border-2 border-danger/30 bg-danger/5 p-2 whitespace-pre-line">{entry.symptomDescription}</p>
             )}
           </section>
 

@@ -12,6 +12,7 @@ import { clientExerciseRouter, coachExerciseRouter, tagsRouter } from "./modules
 import { photosRouter } from "./modules/photos/photos.route.js";
 import { coachingRouter } from "./modules/coaching/coaching.route.js";
 import { accountRouter } from "./modules/account/account.route.js";
+import { moduleFlagsRouter, adminRouter } from "./modules/admin/admin.route.js";
 
 export function createApp() {
   const app = express();
@@ -32,6 +33,8 @@ export function createApp() {
   app.use("/api/coach", coachExerciseRouter);
   app.use("/api/exercise-tags", tagsRouter);
   app.use("/api/me", accountRouter);
+  app.use("/api/module-flags", moduleFlagsRouter);
+  app.use("/api/admin", adminRouter);
   app.use(errorHandler);
   return app;
 }

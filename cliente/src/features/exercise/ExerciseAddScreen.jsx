@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Camera, X } from "lucide-react";
@@ -7,6 +7,7 @@ import { compressImages } from "../../lib/imageCompress.js";
 import { AppHeader } from "../../components/AppHeader.jsx";
 import { Button } from "../../components/Button.jsx";
 import { useExerciseScope } from "./useExerciseScope.js";
+import { ExerciseTagPicker } from "./ExerciseTagPicker.jsx";
 import { FEELINGS } from "./feelings.js";
 
 const MAX_PHOTOS = 5;
@@ -17,8 +18,7 @@ function now() { return new Date().toLocaleTimeString([], { hour: "2-digit", min
 export function ExerciseAddScreen() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { apiBase, linkBase } = useExerciseScope();
-  const [tags, setTags] = useState(null);
+  const { apiBase, usedTagsBase, linkBase } = useExerciseScope();
   const [files, setFiles] = useState([]);
   const [date, setDate] = useState(today());
   const [time, setTime] = useState(now());
@@ -28,11 +28,10 @@ export function ExerciseAddScreen() {
   const [biofeedback, setBiofeedback] = useState("");
   const [feeling, setFeeling] = useState("");
   const [hasAlert, setHasAlert] = useState(false);
+  const [alertNote, setAlertNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [compressing, setCompressing] = useState(false);
   const [error, setError] = useState(null);
-
-  useEffect(() => { api.get("/exercise-tags").then(setTags).catch(() => setTags([])); }, []);
 
   const previews = files.map((f) => ({ f, url: URL.createObjectURL(f) }));
   const canSave = selectedTagId && title.trim() && description.trim() && !saving && !compressing;
@@ -62,6 +61,7 @@ export function ExerciseAddScreen() {
     if (biofeedback.trim()) form.append("biofeedback", biofeedback.trim());
     if (feeling) form.append("feeling", feeling);
     form.append("hasAlert", String(hasAlert));
+    if (hasAlert && alertNote.trim()) form.append("alertNote", alertNote.trim());
     files.forEach((f) => form.append("photos", f));
     try { await api.postForm(apiBase, form); navigate(linkBase); }
     catch (err) { setError(err.message || t("common.error")); }
@@ -97,20 +97,7 @@ export function ExerciseAddScreen() {
 
         <section className="space-y-2">
           <h3 className="font-heading uppercase tracking-wide text-sm">{t("exercise.tag")} <span className="text-danger">*</span></h3>
-          {tags === null ? <p className="text-sm text-ink/50">{t("common.loading")}</p> : (
-            <div className="flex flex-wrap gap-2">
-              {tags.map((tag) => (
-                <button
-                  key={tag.id}
-                  type="button"
-                  onClick={() => toggleTag(tag.id)}
-                  className={`px-3 py-2 text-sm font-heading uppercase tracking-wide border-2 ${selectedTagId === tag.id ? `bg-${tag.color} text-white border-transparent` : "bg-white text-ink border-ink"}`}
-                >
-                  {tag.name}
-                </button>
-              ))}
-            </div>
-          )}
+          <ExerciseTagPicker usedTagsBase={usedTagsBase} selectedTagId={selectedTagId} onSelect={toggleTag} />
         </section>
 
         <section className="space-y-2">
@@ -177,6 +164,11 @@ export function ExerciseAddScreen() {
               {t("exercise.alertNo")}
             </button>
           </div>
+          {hasAlert && (
+            <textarea value={alertNote} onChange={(e) => setAlertNote(e.target.value)} rows={3}
+              placeholder={t("exercise.alertNoteHint")}
+              className="w-full p-3 border-2 border-danger rounded-none resize-none bg-danger/5" />
+          )}
         </section>
       </div>
 

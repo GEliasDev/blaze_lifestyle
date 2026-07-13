@@ -18,4 +18,11 @@ export const config = {
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? "",
     bucket: process.env.R2_BUCKET ?? "blaze-photos",
   },
+  // Optional (not required()) on purpose: existing deploys without these set
+  // yet shouldn't fail to boot — the superuser login path just stays
+  // inactive (see auth.service.js) until both are configured.
+  superuser: {
+    email: process.env.SUPERUSER_EMAIL ?? "",
+    password: process.env.SUPERUSER_PASSWORD ?? "",
+  },
 };

@@ -62,7 +62,7 @@ export function ExerciseEntryDetailScreen() {
           </div>
           <section className="border-2 border-border p-3">
             <h3 className="font-heading uppercase tracking-wide text-sm mb-1">{t("exercise.description")}</h3>
-            <p className="text-ink/80">{entry.description}</p>
+            <p className="text-ink/80 whitespace-pre-line">{entry.description}</p>
           </section>
           <section className="border-2 border-border p-3">
             <h3 className="font-heading uppercase tracking-wide text-sm mb-2">{t("exercise.alertLabel")}</h3>
@@ -70,6 +70,9 @@ export function ExerciseEntryDetailScreen() {
               {entry.hasAlert ? <AlertTriangle className="w-5 h-5" /> : <Check className="w-5 h-5" />}
               <span>{entry.hasAlert ? t("exercise.alertYes") : t("exercise.alertNo")}</span>
             </div>
+            {entry.hasAlert && entry.alertNote && (
+              <p className="mt-2 text-sm text-danger/90 border-2 border-danger/30 bg-danger/5 p-2 whitespace-pre-line">{entry.alertNote}</p>
+            )}
           </section>
           {(entry.biofeedback || feeling) && (
             <section className="border-2 border-border p-3 space-y-2">
@@ -81,7 +84,7 @@ export function ExerciseEntryDetailScreen() {
                   </span>
                 )}
               </div>
-              {entry.biofeedback && <p className="text-ink/80">{entry.biofeedback}</p>}
+              {entry.biofeedback && <p className="text-ink/80 whitespace-pre-line">{entry.biofeedback}</p>}
             </section>
           )}
           <button onClick={() => setConfirming(true)} className="w-full min-h-[44px] px-4 font-heading uppercase tracking-wide border-2 border-danger text-danger flex items-center justify-center gap-2">

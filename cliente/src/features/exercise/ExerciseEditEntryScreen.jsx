@@ -9,6 +9,7 @@ import { Spinner } from "../../components/Spinner.jsx";
 import { Button } from "../../components/Button.jsx";
 import { AuthImage } from "../../components/AuthImage.jsx";
 import { useExerciseScope } from "./useExerciseScope.js";
+import { ExerciseTagPicker } from "./ExerciseTagPicker.jsx";
 import { FEELINGS } from "./feelings.js";
 
 const MAX_PHOTOS = 5;
@@ -20,21 +21,20 @@ export function ExerciseEditEntryScreen() {
   const { id } = useParams();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { apiBase, linkBase } = useExerciseScope();
+  const { apiBase, usedTagsBase, linkBase } = useExerciseScope();
   const [entry, setEntry] = useState(null);
-  const [tags, setTags] = useState(null);
   const [form, setForm] = useState(null);
   const [kept, setKept] = useState([]);
   const [newFiles, setNewFiles] = useState([]);
   const [selectedTagId, setSelectedTagId] = useState(null);
   const [feeling, setFeeling] = useState("");
   const [hasAlert, setHasAlert] = useState(false);
+  const [alertNote, setAlertNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [compressing, setCompressing] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    api.get("/exercise-tags").then(setTags).catch(() => setTags([]));
     api.get(`${apiBase}/${id}`).then((e) => {
       setEntry(e);
       setKept(e.photos);
@@ -44,11 +44,12 @@ export function ExerciseEditEntryScreen() {
       setSelectedTagId(e.tags[0]?.id ?? null);
       setFeeling(e.feeling ?? "");
       setHasAlert(e.hasAlert);
+      setAlertNote(e.alertNote ?? "");
       setForm({ date: dateOf(e.exercisedAt), time: timeOf(e.exercisedAt), title: e.title, description: e.description, biofeedback: e.biofeedback ?? "" });
     }).catch(() => setEntry(false));
   }, [apiBase, id]);
 
-  if (entry === null || !form || tags === null) return (<><AppHeader title={t("exercise.editEntry").toUpperCase()} showBack /><Spinner /></>);
+  if (entry === null || !form) return (<><AppHeader title={t("exercise.editEntry").toUpperCase()} showBack /><Spinner /></>);
   if (entry === false) return (<><AppHeader title={t("exercise.editEntry").toUpperCase()} showBack /><p className="p-8 text-center text-ink/50">{t("exercise.noEntries")}</p></>);
 
   function set(patch) { setForm((f) => ({ ...f, ...patch })); }
@@ -79,6 +80,7 @@ export function ExerciseEditEntryScreen() {
     fd.append("biofeedback", form.biofeedback.trim());
     fd.append("feeling", feeling);
     fd.append("hasAlert", String(hasAlert));
+    fd.append("alertNote", hasAlert ? alertNote.trim() : "");
     kept.forEach((p) => fd.append("keep", p.storageKey));
     newFiles.forEach((f) => fd.append("photos", f));
     try { await api.patchForm(`${apiBase}/${id}`, fd); navigate(`${linkBase}/${id}`); }
@@ -123,18 +125,7 @@ export function ExerciseEditEntryScreen() {
 
         <section className="space-y-2">
           <h3 className="font-heading uppercase tracking-wide text-sm">{t("exercise.tag")} <span className="text-danger">*</span></h3>
-          <div className="flex flex-wrap gap-2">
-            {tags.map((tag) => (
-              <button
-                key={tag.id}
-                type="button"
-                onClick={() => toggleTag(tag.id)}
-                className={`px-3 py-2 text-sm font-heading uppercase tracking-wide border-2 ${selectedTagId === tag.id ? `bg-${tag.color} text-white border-transparent` : "bg-white text-ink border-ink"}`}
-              >
-                {tag.name}
-              </button>
-            ))}
-          </div>
+          <ExerciseTagPicker usedTagsBase={usedTagsBase} selectedTagId={selectedTagId} onSelect={toggleTag} />
         </section>
 
         <section className="space-y-2">
@@ -199,6 +190,11 @@ export function ExerciseEditEntryScreen() {
               {t("exercise.alertNo")}
             </button>
           </div>
+          {hasAlert && (
+            <textarea value={alertNote} onChange={(e) => setAlertNote(e.target.value)} rows={3}
+              placeholder={t("exercise.alertNoteHint")}
+              className="w-full p-3 border-2 border-danger rounded-none resize-none bg-danger/5" />
+          )}
         </section>
       </div>
 

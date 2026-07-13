@@ -20,7 +20,7 @@ export function ClientsScreen() {
   useEffect(() => { load(); }, []);
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-6">
       <h1 className="font-heading uppercase tracking-wide text-2xl">{t("coach.clients")}</h1>
       {user?.coachCode && (
         <div className="flex items-center justify-between border-2 border-primary p-3">

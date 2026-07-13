@@ -17,8 +17,10 @@ export function LoginScreen() {
     e.preventDefault();
     setError(false);
     try {
-      const user = await login(email, password);
-      navigate(user.role === "coach" ? "/coach" : "/nutrition");
+      await login(email, password);
+      // "/" (RoleHome) is the single source of truth for role -> destination,
+      // so it doesn't drift out of sync with this screen (client/coach/superuser).
+      navigate("/");
     } catch {
       setError(true);
     }

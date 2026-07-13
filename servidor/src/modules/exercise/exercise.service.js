@@ -36,6 +36,7 @@ async function serialize(entry) {
     biofeedback: entry.biofeedback,
     feeling: entry.feeling,
     hasAlert: entry.hasAlert,
+    alertNote: entry.alertNote,
     photos: photos.map((p) => ({ storageKey: p.storageKey, thumbKey: p.thumbKey, position: p.position })),
     tags: tags.map(serializeTag),
   };
@@ -103,10 +104,23 @@ export const exerciseService = {
       biofeedback: data.biofeedback || null,
       feeling: data.feeling || null,
       hasAlert: data.hasAlert ?? false,
+      alertNote: data.hasAlert ? data.alertNote || null : null,
     });
     await addPhotos(entry.id, files, 0);
     await setTags(entry.id, data.tagIds);
     return serialize(entry);
+  },
+
+  // Tag IDs this client has actually used, most-frequent first — lets the Add
+  // /Edit screens float a client's usual few tags to the top of the picker
+  // instead of always showing the full (potentially long) tag list flat.
+  async usedTagIds(clientId) {
+    const entries = await ExerciseEntryModel.findAll({ where: { clientId }, attributes: ["id"] });
+    if (entries.length === 0) return [];
+    const links = await ExerciseEntryTagModel.findAll({ where: { entryId: entries.map((e) => e.id) } });
+    const counts = new Map();
+    for (const l of links) counts.set(l.tagId, (counts.get(l.tagId) ?? 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([tagId]) => tagId);
   },
 
   async listEntries(clientId, range = {}) {
@@ -143,6 +157,10 @@ export const exerciseService = {
     const data = editEntrySchema.parse(rawBody);
     if (data.biofeedback === "") data.biofeedback = null;
     if (data.feeling === "") data.feeling = null;
+    // Clearing the alert (hasAlert -> false) drops any note along with it —
+    // a note without an active alert doesn't make sense to keep around.
+    if (data.hasAlert === false) data.alertNote = null;
+    else if (data.alertNote === "") data.alertNote = null;
 
     const existing = await photosFor(id);
     const keep = new Set(keepKeys);
@@ -267,6 +285,21 @@ export const exerciseService = {
     const existing = await ExerciseTagModel.findOne({ where: { name: data.name } });
     if (existing) throw new HttpError(409, "A tag with this name already exists");
     const tag = await ExerciseTagModel.create({ name: data.name, color: data.color, isSystem: false });
+    return serializeTag(tag);
+  },
+
+  // Name/color only — renaming or recoloring a tag never touches the entries
+  // that reference it (they store tagId, not a copy of the name/color), so
+  // every existing workout picks up the change automatically. Allowed on
+  // system tags too, unlike delete.
+  async updateTag(id, data) {
+    const tag = await ExerciseTagModel.findByPk(id);
+    if (!tag) throw new HttpError(404, "Tag not found");
+    if (data.name) {
+      const existing = await ExerciseTagModel.findOne({ where: { name: data.name, id: { [Op.ne]: id } } });
+      if (existing) throw new HttpError(409, "A tag with this name already exists");
+    }
+    await tag.update(data);
     return serializeTag(tag);
   },
 

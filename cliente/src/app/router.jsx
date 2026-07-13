@@ -1,5 +1,7 @@
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../lib/auth.jsx";
+import { useModuleFlags } from "../lib/moduleFlags.jsx";
+import { Spinner } from "../components/Spinner.jsx";
 import { LandingScreen } from "../features/landing/LandingScreen.jsx";
 import { LoginScreen } from "../features/auth/LoginScreen.jsx";
 import { RegisterScreen } from "../features/auth/RegisterScreen.jsx";
@@ -14,34 +16,37 @@ import { ExerciseLayout } from "../features/exercise/ExerciseLayout.jsx";
 import { ExerciseHomeScreen } from "../features/exercise/ExerciseHomeScreen.jsx";
 import { ExerciseCalendarScreen } from "../features/exercise/ExerciseCalendarScreen.jsx";
 import { ExerciseAddScreen } from "../features/exercise/ExerciseAddScreen.jsx";
-import { ExerciseTagsScreen } from "../features/exercise/ExerciseTagsScreen.jsx";
 import { ExerciseEntryDetailScreen } from "../features/exercise/ExerciseEntryDetailScreen.jsx";
 import { ExerciseEditEntryScreen } from "../features/exercise/ExerciseEditEntryScreen.jsx";
 import { ClientsScreen } from "../features/coach/ClientsScreen.jsx";
+import { CoachTagsLayout } from "../features/coach/CoachTagsLayout.jsx";
 import { CoachTagsScreen } from "../features/coach/CoachTagsScreen.jsx";
+import { CoachAddTagScreen } from "../features/coach/CoachAddTagScreen.jsx";
 import { CoachClientLayout } from "../features/coach/CoachClientLayout.jsx";
 import { CoachClientHome } from "../features/coach/CoachClientHome.jsx";
 import { SettingsScreen } from "../features/account/SettingsScreen.jsx";
+import { SuperAdminLayout } from "../features/admin/SuperAdminLayout.jsx";
+import { SuperAdminModulesScreen } from "../features/admin/SuperAdminModulesScreen.jsx";
 
-// Temporary: Exercise is locked for both roles while it's reworked. Flip this
-// back to false to restore the normal routes/children below.
-const EXERCISE_LOCKED = false;
-const exerciseRoute = (path) => (
-  EXERCISE_LOCKED
-    ? { path, element: <ModulePlaceholder titleKey="module.exercise" messageKey="module.underMaintenance" /> }
-    : {
-        path,
-        element: <ExerciseLayout />,
-        children: [
-          { index: true, element: <ExerciseHomeScreen /> },
-          { path: "calendar", element: <ExerciseCalendarScreen /> },
-          { path: "tags", element: <ExerciseTagsScreen /> },
-          { path: "add", element: <ExerciseAddScreen /> },
-          { path: ":id", element: <ExerciseEntryDetailScreen /> },
-          { path: ":id/edit", element: <ExerciseEditEntryScreen /> },
-        ],
-      }
-);
+// Gates a module's routes behind the superuser's on/off flag (see
+// lib/moduleFlags.jsx). While flags are loading, shows a spinner instead of
+// flashing the real module and then swapping to the placeholder a moment
+// later. Rendered as the pathless parent of a module's route subtree, so it
+// only needs one Outlet to hand off to the module's own layout.
+function ModuleGate({ moduleKey, titleKey }) {
+  const { flags } = useModuleFlags();
+  if (flags === null) return <Spinner />;
+  if (flags[moduleKey] === false) return <ModulePlaceholder titleKey={titleKey} messageKey="module.underMaintenance" />;
+  return <Outlet />;
+}
+
+function moduleRoute(path, moduleKey, titleKey, layoutElement, children) {
+  return {
+    path,
+    element: <ModuleGate moduleKey={moduleKey} titleKey={titleKey} />,
+    children: [{ element: layoutElement, children }],
+  };
+}
 
 function RequireRole({ role }) {
   const { user } = useAuth();
@@ -55,7 +60,9 @@ function RequireRole({ role }) {
 function RoleHome() {
   const { user } = useAuth();
   if (!user) return <LandingScreen />;
-  return <Navigate to={user.role === "coach" ? "/coach" : "/nutrition"} replace />;
+  if (user.role === "coach") return <Navigate to="/coach" replace />;
+  if (user.role === "superuser") return <Navigate to="/admin" replace />;
+  return <Navigate to="/nutrition" replace />;
 }
 
 // Client shell. Mobile: centered column, navigation via the header hamburger.
@@ -81,16 +88,18 @@ export const routes = [
       {
         element: <ClientShell />,
         children: [
-          {
-            path: "/nutrition",
-            element: <NutritionLayout />,
-            children: [
-              { path: "add", element: <AddMealScreen /> },
-              { path: ":id", element: <EntryDetailScreen /> },
-              { path: ":id/edit", element: <EditEntryScreen /> },
-            ],
-          },
-          exerciseRoute("/exercise"),
+          moduleRoute("/nutrition", "nutrition", "module.nutrition", <NutritionLayout />, [
+            { path: "add", element: <AddMealScreen /> },
+            { path: ":id", element: <EntryDetailScreen /> },
+            { path: ":id/edit", element: <EditEntryScreen /> },
+          ]),
+          moduleRoute("/exercise", "exercise", "module.exercise", <ExerciseLayout />, [
+            { index: true, element: <ExerciseHomeScreen /> },
+            { path: "calendar", element: <ExerciseCalendarScreen /> },
+            { path: "add", element: <ExerciseAddScreen /> },
+            { path: ":id", element: <ExerciseEntryDetailScreen /> },
+            { path: ":id/edit", element: <ExerciseEditEntryScreen /> },
+          ]),
           { path: "/sleep", element: <ModulePlaceholder titleKey="module.sleep" /> },
           { path: "/body-comp", element: <ModulePlaceholder titleKey="module.bodyComp" /> },
           { path: "/settings", element: <SettingsScreen /> },
@@ -105,7 +114,14 @@ export const routes = [
         element: <CoachLayout />,
         children: [
           { path: "/coach", element: <ClientsScreen /> },
-          { path: "/coach/tags", element: <CoachTagsScreen /> },
+          {
+            path: "/coach/tags",
+            element: <CoachTagsLayout />,
+            children: [
+              { index: true, element: <CoachTagsScreen /> },
+              { path: "add", element: <CoachAddTagScreen /> },
+            ],
+          },
         ],
       },
       // Coach reviewing one client. Desktop shows [module sidebar · list ·
@@ -116,17 +132,28 @@ export const routes = [
         element: <CoachClientLayout />,
         children: [
           { index: true, element: <CoachClientHome /> },
-          {
-            path: "nutrition",
-            element: <NutritionLayout />,
-            children: [
-              { path: "add", element: <AddMealScreen /> },
-              { path: ":id", element: <EntryDetailScreen /> },
-              { path: ":id/edit", element: <EditEntryScreen /> },
-            ],
-          },
-          exerciseRoute("exercise"),
+          moduleRoute("nutrition", "nutrition", "module.nutrition", <NutritionLayout />, [
+            { path: "add", element: <AddMealScreen /> },
+            { path: ":id", element: <EntryDetailScreen /> },
+            { path: ":id/edit", element: <EditEntryScreen /> },
+          ]),
+          moduleRoute("exercise", "exercise", "module.exercise", <ExerciseLayout />, [
+            { index: true, element: <ExerciseHomeScreen /> },
+            { path: "calendar", element: <ExerciseCalendarScreen /> },
+            { path: "add", element: <ExerciseAddScreen /> },
+            { path: ":id", element: <ExerciseEntryDetailScreen /> },
+            { path: ":id/edit", element: <ExerciseEditEntryScreen /> },
+          ]),
         ],
+      },
+    ],
+  },
+  {
+    element: <RequireRole role="superuser" />,
+    children: [
+      {
+        element: <SuperAdminLayout />,
+        children: [{ path: "/admin", element: <SuperAdminModulesScreen /> }],
       },
     ],
   },

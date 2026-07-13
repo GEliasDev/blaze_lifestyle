@@ -26,6 +26,7 @@ ExerciseEntryModel.init(
     // icon everywhere the entry is listed, same convention as Nutrition's
     // hasSymptoms (see mealEntry.model.js).
     hasAlert: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    alertNote: { type: DataTypes.TEXT, allowNull: true },
   },
   { sequelize, tableName: "exercise_entries", underscored: true },
 );

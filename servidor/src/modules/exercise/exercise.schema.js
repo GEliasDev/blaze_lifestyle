@@ -30,6 +30,7 @@ export const createEntrySchema = z.object({
   biofeedback: z.string().optional(),
   feeling: feelingSchema,
   hasAlert: hasAlertSchema,
+  alertNote: z.string().optional(),
 });
 
 // The edit form is multipart (photos can be added/removed), so booleans/arrays
@@ -42,6 +43,7 @@ export const editEntrySchema = z.object({
   biofeedback: z.string().optional(),
   feeling: feelingSchema,
   hasAlert: hasAlertSchema,
+  alertNote: z.string().optional(),
 });
 
 export const listQuerySchema = z.object({
@@ -62,4 +64,9 @@ export const statsQuerySchema = z.object({
 export const createTagSchema = z.object({
   name: z.string().min(1),
   color: z.enum(TAG_COLOR_PALETTE),
+});
+
+export const updateTagSchema = z.object({
+  name: z.string().min(1).optional(),
+  color: z.enum(TAG_COLOR_PALETTE).optional(),
 });

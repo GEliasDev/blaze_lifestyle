@@ -1,5 +1,5 @@
 import { exerciseService } from "./exercise.service.js";
-import { listQuerySchema, statsQuerySchema, createTagSchema } from "./exercise.schema.js";
+import { listQuerySchema, statsQuerySchema, createTagSchema, updateTagSchema } from "./exercise.schema.js";
 import { getObject } from "../../lib/storage.js";
 import { assertCoachOwnsClient } from "../../lib/ownership.js";
 
@@ -28,6 +28,10 @@ export const exerciseController = {
   },
   async stats(req, res, next) {
     try { res.json(await exerciseService.stats(req.user.sub, statsQuerySchema.parse(req.query))); }
+    catch (err) { next(err); }
+  },
+  async usedTags(req, res, next) {
+    try { res.json(await exerciseService.usedTagIds(req.user.sub)); }
     catch (err) { next(err); }
   },
   async photo(req, res, next) {
@@ -81,6 +85,12 @@ export const coachExerciseController = {
       res.json(await exerciseService.stats(req.params.clientId, statsQuerySchema.parse(req.query)));
     } catch (err) { next(err); }
   },
+  async usedTags(req, res, next) {
+    try {
+      await assertCoachOwnsClient(req.user.sub, req.params.clientId);
+      res.json(await exerciseService.usedTagIds(req.params.clientId));
+    } catch (err) { next(err); }
+  },
 };
 
 // Tags are global (not client-scoped) — any authenticated user can list, only a coach can write.
@@ -90,6 +100,10 @@ export const tagsController = {
   },
   async create(req, res, next) {
     try { res.status(201).json(await exerciseService.createTag(createTagSchema.parse(req.body))); }
+    catch (err) { next(err); }
+  },
+  async update(req, res, next) {
+    try { res.json(await exerciseService.updateTag(req.params.id, updateTagSchema.parse(req.body))); }
     catch (err) { next(err); }
   },
   async remove(req, res, next) {
