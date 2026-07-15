@@ -8,15 +8,27 @@ export const accountService = {
     const link = await CoachClientModel.findOne({ where: { clientId } });
     if (!link) return null;
     const coach = await UserModel.findByPk(link.coachId);
-    return coach ? { id: coach.id, name: coach.name } : null;
+    return coach ? { id: coach.id, name: coach.name, status: link.status } : null;
   },
 
+  // Same pending-approval gate as registration (see auth.service.js) — a
+  // client linking to a coach here still needs that coach to accept them
+  // before the app unlocks (see RequireApprovedClient in cliente's router).
+  // A rejected link can be retried (same or a different coachCode) since
+  // there's only ever one row per client: it gets repointed and reset to
+  // "pending" instead of creating a second one. Anything else already-linked
+  // (pending or approved) stays blocked.
   async linkCoach(clientId, coachCode) {
-    if (await CoachClientModel.findOne({ where: { clientId } })) throw new HttpError(409, "Already linked to a coach");
     const coach = await UserModel.findOne({ where: { role: "coach", coachCode } });
     if (!coach) throw new HttpError(404, "Invalid coach code");
-    await CoachClientModel.create({ coachId: coach.id, clientId });
-    return { id: coach.id, name: coach.name };
+    const existing = await CoachClientModel.findOne({ where: { clientId } });
+    if (existing) {
+      if (existing.status !== "rejected") throw new HttpError(409, "Already linked to a coach");
+      await existing.update({ coachId: coach.id, status: "pending" });
+      return { id: coach.id, name: coach.name, status: "pending" };
+    }
+    await CoachClientModel.create({ coachId: coach.id, clientId, status: "pending" });
+    return { id: coach.id, name: coach.name, status: "pending" };
   },
 
   async getProfile(userId) {

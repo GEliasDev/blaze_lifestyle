@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AlertCircle, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { AlertCircle, ChevronLeft, ChevronRight, Clock, Filter, Search, X } from "lucide-react";
 import { AppHeader } from "../../components/AppHeader.jsx";
 import { Spinner } from "../../components/Spinner.jsx";
 import { AuthImage } from "../../components/AuthImage.jsx";
 import { api } from "../../lib/api.js";
 import { useExerciseScope } from "./useExerciseScope.js";
 import { DAY_NAMES, readWeekStartsOn } from "./weekStartsOn.js";
+import { FEELINGS } from "./feelings.js";
 
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -45,8 +46,17 @@ export function ExerciseCalendarScreen() {
   // but applies here too — read whatever was last stored there.
   const [weekStartsOn] = useState(readWeekStartsOn);
 
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [tags, setTags] = useState([]);
+  const [tagFilter, setTagFilter] = useState([]);
+  const [tagQuery, setTagQuery] = useState("");
+  const [feelingFilter, setFeelingFilter] = useState([]);
+  const [injuryOnly, setInjuryOnly] = useState(false);
+
   const adjustedDayNames = [...DAY_NAMES.slice(weekStartsOn), ...DAY_NAMES.slice(0, weekStartsOn)];
   const calendarDays = useMemo(() => getCalendarDays(monthDate, weekStartsOn), [monthDate, weekStartsOn]);
+
+  useEffect(() => { api.get("/exercise-tags").then(setTags).catch(() => setTags([])); }, []);
 
   useEffect(() => {
     const from = calendarDays[0];
@@ -56,14 +66,44 @@ export function ExerciseCalendarScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiBase, monthDate]);
 
+  // Filters apply on top of whatever month is already loaded — same
+  // client-side pattern as Nutrition's list filters (NutritionScreen.jsx).
+  const filteredEntries = useMemo(() => {
+    if (!Array.isArray(entries)) return [];
+    return entries.filter((e) =>
+      (tagFilter.length === 0 || e.tags.some((tag) => tagFilter.includes(tag.id))) &&
+      (feelingFilter.length === 0 || feelingFilter.includes(e.feeling)) &&
+      (!injuryOnly || e.hasAlert)
+    );
+  }, [entries, tagFilter, feelingFilter, injuryOnly]);
+
   const entriesByDay = useMemo(() => {
     const map = {};
-    for (const e of Array.isArray(entries) ? entries : []) {
+    for (const e of filteredEntries) {
       const k = dayKey(e.exercisedAt);
       (map[k] ??= []).push(e);
     }
     return map;
-  }, [entries]);
+  }, [filteredEntries]);
+
+  function toggleTagFilter(id) {
+    setTagFilter((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  // Selected tags collapse into removable chips (same pattern as
+  // ExerciseTagPicker) — the search/list below only ever offers tags not
+  // already picked, instead of showing every tag flat all the time.
+  const selectedTags = tags.filter((tag) => tagFilter.includes(tag.id));
+  const unselectedTags = useMemo(() => {
+    const q = tagQuery.trim().toLowerCase();
+    return tags
+      .filter((tag) => !tagFilter.includes(tag.id))
+      .filter((tag) => !q || tag.name.toLowerCase().includes(q));
+  }, [tags, tagFilter, tagQuery]);
+
+  function toggleFeelingFilter(value) {
+    setFeelingFilter((prev) => (prev.includes(value) ? prev.filter((x) => x !== value) : [...prev, value]));
+  }
 
   function navigateMonth(delta) {
     const d = new Date(monthDate);
@@ -75,6 +115,17 @@ export function ExerciseCalendarScreen() {
   const selectedKey = selectedDay ? selectedDay.toLocaleDateString("en-CA") : null;
   const selectedEntries = selectedKey ? (entriesByDay[selectedKey] ?? []) : [];
 
+  const filterAction = (
+    <button
+      onClick={() => setFilterOpen((v) => !v)}
+      aria-label={t("nav.filter")}
+      aria-pressed={filterOpen}
+      className={`min-h-[44px] min-w-[44px] flex items-center justify-center ${filterOpen ? "text-primary" : "text-white/80"}`}
+    >
+      <Filter className="w-6 h-6" />
+    </button>
+  );
+
   return (
     <>
       <AppHeader
@@ -82,7 +133,85 @@ export function ExerciseCalendarScreen() {
         showBack={isCoach}
         backTo={isCoach ? `/coach/clients/${clientId}` : null}
         desktopBackTo={isCoach ? "/coach" : null}
+        action={filterAction}
       />
+
+      {filterOpen && (
+        <div className="bg-muted border-b-2 border-primary p-3 space-y-3">
+          <div className="space-y-2">
+            <h3 className="font-heading uppercase tracking-wide text-sm">{t("exercise.tag")}</h3>
+            {selectedTags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {selectedTags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => toggleTagFilter(tag.id)}
+                    className={`flex items-center gap-2 px-3 py-2 text-sm font-heading uppercase tracking-wide bg-${tag.color} text-white`}
+                  >
+                    {tag.name}<X className="w-4 h-4" />
+                  </button>
+                ))}
+              </div>
+            )}
+            <label className="relative block">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-ink/40" />
+              <input
+                value={tagQuery}
+                onChange={(e) => setTagQuery(e.target.value)}
+                placeholder={t("exercise.searchTags")}
+                aria-label={t("exercise.searchTags")}
+                className="w-full p-3 pl-10 border-2 border-border rounded-none bg-white"
+              />
+            </label>
+            <div className="max-h-40 overflow-y-auto border-2 border-border divide-y-2 divide-border bg-white">
+              {unselectedTags.length === 0 ? (
+                <p className="p-3 text-sm text-ink/50 text-center">{t("exercise.noTagsFound")}</p>
+              ) : (
+                unselectedTags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => toggleTagFilter(tag.id)}
+                    className="w-full flex items-center gap-3 p-3 text-left min-h-[44px] bg-white text-ink"
+                  >
+                    <span className={`w-4 h-4 shrink-0 bg-${tag.color}`} />
+                    <span className="font-heading uppercase tracking-wide font-bold">{tag.name}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <h3 className="font-heading uppercase tracking-wide text-sm">{t("exercise.biofeedback")}</h3>
+            <div className="flex gap-2">
+              {FEELINGS.map(({ value, icon: Icon, labelKey }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => toggleFeelingFilter(value)}
+                  aria-label={t(labelKey)}
+                  aria-pressed={feelingFilter.includes(value)}
+                  className={`flex-1 min-h-[44px] flex items-center justify-center border-2 ${feelingFilter.includes(value) ? "bg-primary text-white border-primary" : "bg-white text-ink border-border"}`}
+                >
+                  <Icon className="w-5 h-5" />
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <h3 className="font-heading uppercase tracking-wide text-sm">{t("exercise.alertLabel")}</h3>
+            <button
+              type="button"
+              onClick={() => setInjuryOnly((v) => !v)}
+              aria-pressed={injuryOnly}
+              className={`w-full px-3 min-h-[44px] border-2 font-heading uppercase tracking-wide flex items-center justify-center gap-2 ${injuryOnly ? "bg-danger text-white border-danger" : "bg-white text-ink border-border"}`}
+            >
+              <AlertCircle className="w-5 h-5" />{t("exercise.injuryOnly")}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* scrollbar-gutter reserves the scrollbar's width up front, so the
           centered calendar below doesn't shift sideways when the entries
@@ -116,7 +245,7 @@ export function ExerciseCalendarScreen() {
                     <button
                       key={i}
                       onClick={() => setSelectedDay(date)}
-                      className={`aspect-square rounded-full flex items-center justify-center text-sm border-2 ${isCurrentMonth ? `text-ink ${isSelected ? "border-ink bg-transparent" : hasEntries ? "border-primary bg-primary text-white" : "border-transparent"}` : "text-ink/30 border-transparent"}`}
+                      className={`aspect-square rounded-full flex items-center justify-center text-sm border-2 ${isCurrentMonth ? (hasEntries ? `bg-primary text-white ${isSelected ? "border-ink" : "border-primary"}` : isSelected ? "border-ink bg-transparent text-ink" : "border-transparent text-ink") : "text-ink/30 border-transparent"}`}
                     >
                       {date.getDate()}
                     </button>

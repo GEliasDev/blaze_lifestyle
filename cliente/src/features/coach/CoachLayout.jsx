@@ -1,35 +1,16 @@
-import { NavLink, Outlet } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import { useAuth } from "../../lib/auth.jsx";
-import { Users, Tag, LogOut } from "lucide-react";
+import { Outlet } from "react-router-dom";
+import { CoachSidebar } from "../../components/CoachSidebar.jsx";
 
+// Mirrors ClientShell (app/router.jsx): a persistent sidebar on desktop
+// (lg+), completely hidden on mobile — each routed screen's own AppHeader
+// carries the hamburger drawer for navigation there instead (see
+// coachNav.js's COACH_NAV_ITEMS, passed into AppHeader by ClientsScreen/
+// CoachTagsScreen/CoachSettingsScreen).
 export function CoachLayout() {
-  const { t } = useTranslation();
-  const { logout } = useAuth();
   return (
-    <div className="h-dvh flex flex-col md:grid md:grid-cols-[260px_1fr]">
-      <aside className="shrink-0 bg-ink text-white md:min-h-dvh">
-        <div className="p-4">
-          <div className="font-heading font-bold tracking-wide text-lg">BLAZE LIFESTYLE</div>
-          <div className="text-white/60 text-xs tracking-wide">COACH PANEL</div>
-        </div>
-        <nav className="flex md:block">
-          <NavLink to="/coach" end className={({ isActive }) => `flex items-center gap-2 p-4 font-heading uppercase tracking-wide text-sm ${isActive ? "text-primary" : "text-white/70"}`}>
-            <Users className="w-5 h-5" />{t("coach.clients")}
-          </NavLink>
-          <NavLink to="/coach/tags" className={({ isActive }) => `flex items-center gap-2 p-4 font-heading uppercase tracking-wide text-sm ${isActive ? "text-primary" : "text-white/70"}`}>
-            <Tag className="w-5 h-5" />{t("exercise.manageTags")}
-          </NavLink>
-          <button onClick={logout} className="flex items-center gap-2 p-4 font-heading uppercase tracking-wide text-sm text-white/70">
-            <LogOut className="w-5 h-5" />{t("auth.logout")}
-          </button>
-        </nav>
-      </aside>
-      {/* flex-1 min-h-0 fills exactly the space left after the aside on
-          mobile; overflow-hidden means each routed screen owns its own
-          scroll region (and, for Tags, its own pinned bottom nav) instead of
-          the whole main scrolling and dragging a bottom nav along with it. */}
-      <main className="bg-white flex-1 min-h-0 flex flex-col overflow-hidden"><Outlet /></main>
+    <div className="h-dvh flex flex-col lg:grid lg:grid-cols-[220px_1fr] bg-white">
+      <CoachSidebar />
+      <main className="flex-1 min-h-0 flex flex-col overflow-hidden"><Outlet /></main>
     </div>
   );
 }

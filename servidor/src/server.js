@@ -3,6 +3,7 @@ import { createApp } from "./app.js";
 import { config } from "./config.js";
 import { exerciseService } from "./modules/exercise/exercise.service.js";
 import { adminService } from "./modules/admin/admin.service.js";
+import { coachingService } from "./modules/coaching/coaching.service.js";
 
 // Importing createApp pulls in the route → controller → service → model graph,
 // which registers every Sequelize model before we sync.
@@ -16,6 +17,7 @@ await sequelize.authenticate();
 await sequelize.sync({ alter: true });
 await exerciseService.ensureSystemTags();
 await adminService.ensureModuleFlags();
+await coachingService.ensureSelfClients();
 
 app.listen(config.port, () => {
   console.log(`API listening on :${config.port}`);

@@ -59,6 +59,10 @@ export const listQuerySchema = z.object({
 export const statsQuerySchema = z.object({
   timeZone: z.string().min(1).optional(),
   weekStartsOn: z.coerce.number().int().min(0).max(6).optional(),
+  // Which year the weeklyChart covers — clamped server-side to
+  // [registeredYear, currentYear] regardless of what's sent (see
+  // exercise.service.js stats()).
+  year: z.coerce.number().int().min(2000).max(2100).optional(),
 });
 
 export const createTagSchema = z.object({

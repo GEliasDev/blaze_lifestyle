@@ -11,7 +11,10 @@ const modules = [
   { to: "/body-comp", icon: Scale, key: "module.bodyComp" },
 ];
 
-export function AppHeader({ title, showBack = false, backTo = null, desktopBackTo = backTo, action = null }) {
+// navItems/settingsTo default to the client's own nav (used by every
+// Nutrition/Exercise screen) — coach screens pass COACH_NAV_ITEMS + "/coach/settings"
+// instead, so the same hamburger drawer mechanic serves both roles.
+export function AppHeader({ title, showBack = false, backTo = null, desktopBackTo = backTo, action = null, navItems = modules, settingsTo = "/settings" }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { logout } = useAuth();
@@ -72,10 +75,11 @@ export function AppHeader({ title, showBack = false, backTo = null, desktopBackT
               </button>
             </div>
             <div className="flex-1 py-2">
-              {modules.map(({ to, icon: Icon, key }) => (
+              {navItems.map(({ to, icon: Icon, key }) => (
                 <NavLink
                   key={to}
                   to={to}
+                  end={to === "/coach"}
                   onClick={() => setOpen(false)}
                   className={({ isActive }) => `flex items-center gap-3 px-4 min-h-[52px] font-heading uppercase tracking-wide text-sm ${isActive ? "text-primary" : "text-white/80"}`}
                 >
@@ -85,7 +89,7 @@ export function AppHeader({ title, showBack = false, backTo = null, desktopBackT
             </div>
             <div className="border-t-2 border-white/10">
               <NavLink
-                to="/settings"
+                to={settingsTo}
                 onClick={() => setOpen(false)}
                 className={({ isActive }) => `flex items-center gap-3 px-4 min-h-[52px] font-heading uppercase tracking-wide text-sm ${isActive ? "text-primary" : "text-white/80"}`}
               >

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { api } from "../../lib/api.js";
 
 // Search + vertical list tag picker, sorted with this client's most
@@ -16,6 +16,8 @@ export function ExerciseTagPicker({ usedTagsBase, selectedTagId, onSelect }) {
     api.get("/exercise-tags").then(setTags).catch(() => setTags([]));
     api.get(usedTagsBase).then(setUsedTagIds).catch(() => setUsedTagIds([]));
   }, [usedTagsBase]);
+
+  const usedSet = useMemo(() => new Set(usedTagIds), [usedTagIds]);
 
   const sortedTags = useMemo(() => {
     if (!tags) return [];
@@ -33,6 +35,23 @@ export function ExerciseTagPicker({ usedTagsBase, selectedTagId, onSelect }) {
   }, [sortedTags, query]);
 
   if (tags === null) return <p className="text-sm text-ink/50">{t("common.loading")}</p>;
+
+  // Once a tag is picked, collapse the search/list down to just that choice —
+  // it reopens only if the coach/client removes it (the X below), instead of
+  // staying expanded and inviting a second pick.
+  const selectedTag = tags.find((tag) => tag.id === selectedTagId);
+  if (selectedTag) {
+    return (
+      <button
+        type="button"
+        onClick={() => onSelect(selectedTag.id)}
+        className={`w-full flex items-center gap-3 p-3 border-2 border-transparent bg-${selectedTag.color} text-white`}
+      >
+        <span className="flex-1 text-left font-heading uppercase tracking-wide font-bold">{selectedTag.name}</span>
+        <X className="w-5 h-5 shrink-0" />
+      </button>
+    );
+  }
 
   return (
     <div className="space-y-2">
@@ -59,7 +78,12 @@ export function ExerciseTagPicker({ usedTagsBase, selectedTagId, onSelect }) {
               className={`w-full flex items-center gap-3 p-3 text-left min-h-[44px] ${selectedTagId === tag.id ? "bg-ink text-white" : "bg-white text-ink"}`}
             >
               <span className={`w-4 h-4 shrink-0 bg-${tag.color}`} />
-              <span className="font-heading uppercase tracking-wide font-bold">{tag.name}</span>
+              <span className="font-heading uppercase tracking-wide font-bold flex-1">{tag.name}</span>
+              {usedSet.has(tag.id) && (
+                <span className={`shrink-0 text-xs font-heading uppercase tracking-wide px-1.5 py-0.5 border ${selectedTagId === tag.id ? "border-white/60 text-white/80" : "border-ink/30 text-ink/50"}`}>
+                  {t("exercise.usedBadge")}
+                </span>
+              )}
             </button>
           ))
         )}

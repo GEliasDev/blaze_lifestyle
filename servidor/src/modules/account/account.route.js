@@ -16,9 +16,11 @@ const changePasswordSchema = z.object({
 });
 
 export const accountRouter = Router(); // mounted at /api/me
-accountRouter.use(authGuard, roleGuard("client"));
-accountRouter.get("/coach", accountController.getCoach);
-accountRouter.post("/coach", validate(linkCoachSchema), accountController.linkCoach);
+accountRouter.use(authGuard);
+// Linking to a coach only makes sense for clients.
+accountRouter.get("/coach", roleGuard("client"), accountController.getCoach);
+accountRouter.post("/coach", roleGuard("client"), validate(linkCoachSchema), accountController.linkCoach);
+// Profile/password management applies to both clients and coaches.
 accountRouter.get("/profile", accountController.getProfile);
 accountRouter.patch("/profile", validate(updateProfileSchema), accountController.updateProfile);
 accountRouter.post("/change-password", validate(changePasswordSchema), accountController.changePassword);

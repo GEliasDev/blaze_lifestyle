@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api } from "../../lib/api.js";
+import { AppHeader } from "../../components/AppHeader.jsx";
 import { Button } from "../../components/Button.jsx";
 import { TAG_COLOR_PALETTE } from "../exercise/tagColors.js";
 
@@ -25,21 +26,22 @@ export function CoachAddTagScreen() {
   }
 
   return (
-    <div className="p-4 space-y-6">
-      <h1 className="font-heading uppercase tracking-wide text-2xl">{t("exercise.newTag")}</h1>
-
-      <div className="border-2 border-border p-4 space-y-3">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("exercise.tagName")}
-          className="w-full p-3 border-2 border-border rounded-none" />
-        <div className="flex flex-wrap gap-2">
-          {TAG_COLOR_PALETTE.map((c) => (
-            <button key={c} type="button" onClick={() => setColor(c)}
-              className={`w-8 h-8 bg-${c} ${color === c ? "ring-2 ring-offset-2 ring-ink" : ""}`} aria-label={c} />
-          ))}
+    <>
+      <AppHeader title={t("exercise.newTag").toUpperCase()} showBack backTo="/coach/tags" />
+      <div className="p-4 space-y-6">
+        <div className="border-2 border-border p-4 space-y-3">
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("exercise.tagName")}
+            className="w-full p-3 border-2 border-border rounded-none" />
+          <div className="flex flex-wrap gap-2">
+            {TAG_COLOR_PALETTE.map((c) => (
+              <button key={c} type="button" onClick={() => setColor(c)}
+                className={`w-8 h-8 bg-${c} ${color === c ? "ring-2 ring-offset-2 ring-ink" : ""}`} aria-label={c} />
+            ))}
+          </div>
+          {error && <p role="alert" className="text-danger text-sm">{error}</p>}
+          <Button variant="primary" className="w-full" disabled={!name.trim() || saving} onClick={onCreate}>{t("exercise.addTag")}</Button>
         </div>
-        {error && <p role="alert" className="text-danger text-sm">{error}</p>}
-        <Button variant="primary" className="w-full" disabled={!name.trim() || saving} onClick={onCreate}>{t("exercise.addTag")}</Button>
       </div>
-    </div>
+    </>
   );
 }

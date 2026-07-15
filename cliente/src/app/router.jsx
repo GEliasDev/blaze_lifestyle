@@ -1,7 +1,9 @@
 import { createBrowserRouter, Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../lib/auth.jsx";
 import { useModuleFlags } from "../lib/moduleFlags.jsx";
+import { useCoachStatus } from "../lib/coachStatus.jsx";
 import { Spinner } from "../components/Spinner.jsx";
+import { PendingApprovalScreen } from "../features/account/PendingApprovalScreen.jsx";
 import { LandingScreen } from "../features/landing/LandingScreen.jsx";
 import { LoginScreen } from "../features/auth/LoginScreen.jsx";
 import { RegisterScreen } from "../features/auth/RegisterScreen.jsx";
@@ -66,6 +68,18 @@ function RequireRole({ role }) {
   return <Outlet />;
 }
 
+// Blocks the whole client app behind the coach's accept/reject decision (see
+// coaching.service.js's setClientStatus). A client with no coach link at all
+// isn't gated — that covers clients who predate this feature, back when a
+// coach code was optional. coachStatus is polled (lib/coachStatus.jsx), so
+// this clears on its own once the coach accepts them, no refresh needed.
+function RequireApprovedClient() {
+  const { coachStatus } = useCoachStatus();
+  if (coachStatus === null) return <Spinner />;
+  if (coachStatus.hasCoach && coachStatus.status !== "approved") return <PendingApprovalScreen />;
+  return <Outlet />;
+}
+
 // "/" is the public landing page for logged-out visitors; a logged-in user
 // lands straight on their dashboard instead of seeing marketing copy again.
 function RoleHome() {
@@ -100,29 +114,34 @@ export const routes = [
     element: <RequireRole role="client" />,
     children: [
       {
-        element: <ClientShell />,
+        element: <RequireApprovedClient />,
         children: [
-          moduleRoute("/nutrition", "nutrition", "module.nutrition", <NutritionLayout />, [
-            // NutritionLayout renders its own list directly (no Outlet) when
-            // there's no further path — but react-router still needs a
-            // matching child route to select it as the layout at all, so
-            // this index route exists purely to satisfy that; its element is
-            // never actually used.
-            { index: true, element: null },
-            { path: "add", element: <AddMealScreen /> },
-            { path: ":id", element: <EntryDetailScreen /> },
-            { path: ":id/edit", element: <EditEntryScreen /> },
-          ]),
-          moduleRoute("/exercise", "exercise", "module.exercise", <ExerciseLayout />, [
-            { index: true, element: <ExerciseHomeScreen /> },
-            { path: "calendar", element: <ExerciseCalendarScreen /> },
-            { path: "add", element: <ExerciseAddScreen /> },
-            { path: ":id", element: <ExerciseEntryDetailScreen /> },
-            { path: ":id/edit", element: <ExerciseEditEntryScreen /> },
-          ]),
-          { path: "/sleep", element: <ModulePlaceholder titleKey="module.sleep" /> },
-          { path: "/body-comp", element: <ModulePlaceholder titleKey="module.bodyComp" /> },
-          { path: "/settings", element: <SettingsScreen /> },
+          {
+            element: <ClientShell />,
+            children: [
+              moduleRoute("/nutrition", "nutrition", "module.nutrition", <NutritionLayout />, [
+                // NutritionLayout renders its own list directly (no Outlet) when
+                // there's no further path — but react-router still needs a
+                // matching child route to select it as the layout at all, so
+                // this index route exists purely to satisfy that; its element is
+                // never actually used.
+                { index: true, element: null },
+                { path: "add", element: <AddMealScreen /> },
+                { path: ":id", element: <EntryDetailScreen /> },
+                { path: ":id/edit", element: <EditEntryScreen /> },
+              ]),
+              moduleRoute("/exercise", "exercise", "module.exercise", <ExerciseLayout />, [
+                { index: true, element: <ExerciseHomeScreen /> },
+                { path: "calendar", element: <ExerciseCalendarScreen /> },
+                { path: "add", element: <ExerciseAddScreen /> },
+                { path: ":id", element: <ExerciseEntryDetailScreen /> },
+                { path: ":id/edit", element: <ExerciseEditEntryScreen /> },
+              ]),
+              { path: "/sleep", element: <ModulePlaceholder titleKey="module.sleep" /> },
+              { path: "/body-comp", element: <ModulePlaceholder titleKey="module.bodyComp" /> },
+              { path: "/settings", element: <SettingsScreen /> },
+            ],
+          },
         ],
       },
     ],
@@ -142,6 +161,7 @@ export const routes = [
               { path: "add", element: <CoachAddTagScreen /> },
             ],
           },
+          { path: "/coach/settings", element: <SettingsScreen /> },
         ],
       },
       // Coach reviewing one client. Desktop shows [module sidebar · list ·

@@ -54,7 +54,10 @@ export const authService = {
       passwordHash: await hashPassword(password),
       coachCode: role === "coach" ? await uniqueCoachCode() : null,
     });
-    if (coach) await CoachClientModel.create({ coachId: coach.id, clientId: user.id });
+    if (coach) await CoachClientModel.create({ coachId: coach.id, clientId: user.id, status: "pending" });
+    // Every coach is also their own "client" (see coachingService.ensureSelfClients,
+    // which backfills this for coaches created before this existed).
+    if (role === "coach") await CoachClientModel.create({ coachId: user.id, clientId: user.id, status: "approved", nickname: "ME" });
     return tokensFor(user);
   },
 

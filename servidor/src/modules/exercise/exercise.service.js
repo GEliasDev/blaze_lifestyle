@@ -4,6 +4,7 @@ import { ExercisePhotoModel } from "./exercisePhoto.model.js";
 import { ExerciseTagModel } from "./exerciseTag.model.js";
 import { ExerciseEntryTagModel } from "./exerciseEntryTag.model.js";
 import { CoachClientModel } from "../coaching/coachClients.model.js";
+import { UserModel } from "../users/users.model.js";
 import { buildKey, makeThumbnail, putObject, deleteObject } from "../../lib/storage.js";
 import { editEntrySchema, MAX_PHOTOS } from "./exercise.schema.js";
 import { SYSTEM_EXERCISE_TAGS } from "../../shared/index.js";
@@ -216,57 +217,74 @@ export const exerciseService = {
     return key;
   },
 
-  // Year: distinct trained days this year ÷ days elapsed this year.
-  // Week: distinct trained days this week ÷ days elapsed this week (respects
-  // the client's weekStartsOn preference — see ExerciseHomeScreen/weekStartsOn.js).
-  // weeklyChart: one { week, days } entry per elapsed week of the year so far —
-  // same shape as the mockup's getWeeklyChartData(); its 7-day buckets always
-  // start at Jan 1 (an elapsed-week view of the year), independent of weekStartsOn.
+  // Year/Week cards: always about the real "now", never affected by `year`
+  // below — a past year's "Year Progress" bar wouldn't mean anything since
+  // that year is already closed. weeklyChart is the one piece that's
+  // year-scoped: `year` (ExerciseHomeScreen's year-nav arrows) picks which
+  // year it covers, clamped to [registeredYear, currentYear] — the current
+  // year still only shows elapsed weeks so far, but a past year shows the
+  // whole thing (it's already over). Same shape as the mockup's
+  // getWeeklyChartData(); its 7-day buckets always start at that year's
+  // Jan 1, independent of weekStartsOn.
   //
   // Everything is bucketed by calendar day **in the client's timeZone**, not
   // the server's — otherwise a client whose local day has already rolled over
   // (or hasn't yet) relative to the server disagrees with its own Calendar
   // screen about which day/week an entry near midnight belongs to.
-  async stats(clientId, { timeZone = "UTC", weekStartsOn = 1 } = {}) {
+  async stats(clientId, { timeZone = "UTC", weekStartsOn = 1, year } = {}) {
     const todayKey = dayKeyInTz(new Date(), timeZone);
-    const yearStartKey = `${todayKey.slice(0, 4)}-01-01`;
+    const currentYear = Number(todayKey.slice(0, 4));
+    const yearStartKey = `${currentYear}-01-01`;
     const dow = (new Date(`${todayKey}T00:00:00`).getDay() - weekStartsOn + 7) % 7;
     const weekStartKey = addDaysToKey(todayKey, -dow);
-    // The current week can start before Jan 1 (e.g. today is Jan 2, week
-    // starts Sunday Dec 28) — query from whichever boundary is earlier so
-    // those days aren't silently excluded from the week count.
-    const queryFromKey = weekStartKey < yearStartKey ? weekStartKey : yearStartKey;
 
-    // Wide UTC bounds around the intended range purely to limit what the DB
-    // returns — a ±1 day buffer comfortably covers every real UTC offset
-    // (-12 to +14h). Precise bucketing happens in JS below via dayKeyInTz.
+    const client = await UserModel.findByPk(clientId, { attributes: ["createdAt"] });
+    const registeredYear = client ? client.createdAt.getFullYear() : currentYear;
+    const chartYear = Math.min(Math.max(year ?? currentYear, registeredYear), currentYear);
+    const chartYearStartKey = `${chartYear}-01-01`;
+    const chartYearEndKey = chartYear === currentYear ? todayKey : `${chartYear}-12-31`;
+
+    // Wide UTC bounds around the union of every range this call needs
+    // (this-week/this-year for the cards, chartYear for the chart) purely to
+    // limit what the DB returns — a ±1 day buffer comfortably covers every
+    // real UTC offset (-12 to +14h). Precise bucketing happens in JS below.
+    const queryFromKey = [weekStartKey, yearStartKey, chartYearStartKey].reduce((a, b) => (a < b ? a : b));
+    const queryToKey = todayKey > chartYearEndKey ? todayKey : chartYearEndKey;
     const queryFrom = new Date(new Date(`${queryFromKey}T00:00:00Z`).getTime() - 86400000);
-    const queryTo = new Date(Date.now() + 86400000);
+    const queryTo = new Date(new Date(`${queryToKey}T00:00:00Z`).getTime() + 86400000);
     const entries = await ExerciseEntryModel.findAll({
       where: { clientId, exercisedAt: { [Op.gte]: queryFrom, [Op.lte]: queryTo } },
     });
 
-    const dayKeys = entries
-      .map((e) => dayKeyInTz(e.exercisedAt, timeZone))
-      .filter((k) => k >= queryFromKey && k <= todayKey);
+    const dayKeys = entries.map((e) => dayKeyInTz(e.exercisedAt, timeZone));
 
-    const yearDayKeys = new Set(dayKeys.filter((k) => k >= yearStartKey));
+    const yearDayKeys = new Set(dayKeys.filter((k) => k >= yearStartKey && k <= todayKey));
     const yearTrainedDays = yearDayKeys.size;
     const yearElapsedDays = daysBetweenKeys(yearStartKey, todayKey) + 1;
 
-    const weekTrainedDays = new Set(dayKeys.filter((k) => k >= weekStartKey)).size;
+    const weekTrainedDays = new Set(dayKeys.filter((k) => k >= weekStartKey && k <= todayKey)).size;
     const weekElapsedDays = dow + 1;
 
-    const weeksNeeded = Math.ceil(yearElapsedDays / 7);
+    const chartYearDayKeys = new Set(dayKeys.filter((k) => k >= chartYearStartKey && k <= chartYearEndKey));
+    const weeksNeeded = Math.ceil((daysBetweenKeys(chartYearStartKey, chartYearEndKey) + 1) / 7);
     const weeklyChart = [];
     for (let week = 1; week <= weeksNeeded; week++) {
-      const wStart = addDaysToKey(yearStartKey, (week - 1) * 7);
-      const wEnd = addDaysToKey(yearStartKey, week * 7 - 1);
-      const days = [...yearDayKeys].filter((k) => k >= wStart && k <= wEnd).length;
+      const wStart = addDaysToKey(chartYearStartKey, (week - 1) * 7);
+      const wEnd = addDaysToKey(chartYearStartKey, week * 7 - 1);
+      const days = [...chartYearDayKeys].filter((k) => k >= wStart && k <= wEnd).length;
       weeklyChart.push({ week, days });
     }
 
-    return { yearTrainedDays, yearElapsedDays, weekTrainedDays, weekElapsedDays, weeklyChart };
+    return {
+      yearTrainedDays,
+      yearElapsedDays,
+      weekTrainedDays,
+      weekElapsedDays,
+      weeklyChart,
+      chartYear,
+      registeredYear,
+      currentYear,
+    };
   },
 
   // Idempotent: safe to call on every server boot (findOrCreate by name).
@@ -276,9 +294,14 @@ export const exerciseService = {
     }
   },
 
+  // `inUse` tells the coach panel whether a tag can be deleted outright (not
+  // used by any entry yet) or only edited (already attached to entries) —
+  // same rule for system and coach-created tags alike, see deleteTag below.
   async listTags() {
     const tags = await ExerciseTagModel.findAll({ order: [["is_system", "DESC"], ["name", "ASC"]] });
-    return tags.map(serializeTag);
+    const links = await ExerciseEntryTagModel.findAll({ attributes: ["tagId"] });
+    const usedIds = new Set(links.map((l) => l.tagId));
+    return tags.map((t) => ({ ...serializeTag(t), inUse: usedIds.has(t.id) }));
   },
 
   async createTag(data) {
@@ -291,7 +314,8 @@ export const exerciseService = {
   // Name/color only — renaming or recoloring a tag never touches the entries
   // that reference it (they store tagId, not a copy of the name/color), so
   // every existing workout picks up the change automatically. Allowed on
-  // system tags too, unlike delete.
+  // every tag regardless of use, including system tags — the coach panel is
+  // expected to warn when a tag being edited is already in use.
   async updateTag(id, data) {
     const tag = await ExerciseTagModel.findByPk(id);
     if (!tag) throw new HttpError(404, "Tag not found");
@@ -303,10 +327,11 @@ export const exerciseService = {
     return serializeTag(tag);
   },
 
+  // A tag (system or coach-created) can only be deleted once nothing
+  // references it — in use means edit-only (see updateTag).
   async deleteTag(id) {
     const tag = await ExerciseTagModel.findByPk(id);
     if (!tag) throw new HttpError(404, "Tag not found");
-    if (tag.isSystem) throw new HttpError(409, "System tags can't be deleted");
     const inUse = await ExerciseEntryTagModel.findOne({ where: { tagId: id } });
     if (inUse) throw new HttpError(409, "Tag is in use by existing entries");
     await tag.destroy();

@@ -19,7 +19,7 @@ export function CoachClientHome() {
 
   return (
     <>
-      <AppHeader title={client ? client.name.toUpperCase() : t("coach.client").toUpperCase()} showBack backTo="/coach" />
+      <AppHeader title={client ? (client.nickname || client.name).toUpperCase() : t("coach.client").toUpperCase()} showBack backTo="/coach" />
       <div className="flex-1 p-3 space-y-3 lg:hidden">
         {MODULES.map(({ to, icon: Icon, key, enabled }) =>
           enabled ? (

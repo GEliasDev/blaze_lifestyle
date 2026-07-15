@@ -28,7 +28,7 @@ export function CoachClientLayout() {
             <ChevronLeft className="w-4 h-4" />{t("coach.clients")}
           </NavLink>
           <div className="font-heading uppercase tracking-wide text-xs text-white/50">{t("coach.client")}</div>
-          <div className="font-heading font-bold tracking-wide text-lg truncate">{client ? client.name : "…"}</div>
+          <div className="font-heading font-bold tracking-wide text-lg truncate">{client ? (client.nickname || client.name) : "…"}</div>
         </div>
         <nav className="flex-1 py-2">
           <NavLink to="nutrition" className={({ isActive }) => `${ROW} ${isActive ? "text-primary" : "text-white/80"}`}>

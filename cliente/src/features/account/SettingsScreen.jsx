@@ -5,14 +5,21 @@ import { api } from "../../lib/api.js";
 import { AppHeader } from "../../components/AppHeader.jsx";
 import { Spinner } from "../../components/Spinner.jsx";
 import { Button } from "../../components/Button.jsx";
+import { useAuth } from "../../lib/auth.jsx";
+import { COACH_NAV_ITEMS } from "../coach/coachNav.js";
 
+// Shared by both roles (mounted at /settings for clients, /coach/settings
+// for coaches) — the "your coach" tab only applies to clients, since a coach
+// doesn't link to one themselves.
 export function SettingsScreen() {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const isCoach = user?.role === "coach";
   const [coach, setCoach] = useState(undefined);
   const [code, setCode] = useState("");
   const [error, setError] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [profileTab, setProfileTab] = useState("coach");
+  const [profileTab, setProfileTab] = useState(isCoach ? "profile" : "coach");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
@@ -28,7 +35,7 @@ export function SettingsScreen() {
       setEmail(p.email);
     }).catch(() => {});
   }
-  useEffect(() => { loadCoach(); loadProfile(); }, []);
+  useEffect(() => { if (!isCoach) loadCoach(); loadProfile(); }, [isCoach]);
 
   async function link(e) {
     e.preventDefault();
@@ -72,13 +79,19 @@ export function SettingsScreen() {
 
   return (
     <>
-      <AppHeader title={t("settings.title").toUpperCase()} />
+      <AppHeader
+        title={t("settings.title").toUpperCase()}
+        navItems={isCoach ? COACH_NAV_ITEMS : undefined}
+        settingsTo={isCoach ? "/coach/settings" : "/settings"}
+      />
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         <div className="flex border-2 border-border">
-          <button onClick={() => setProfileTab("coach")}
-            className={`flex-1 min-h-[44px] font-heading uppercase tracking-wide text-sm flex items-center justify-center gap-2 ${profileTab === "coach" ? "bg-primary text-white" : "bg-white text-ink"}`}>
-            <User className="w-4 h-4" />{t("settings.yourCoach")}
-          </button>
+          {!isCoach && (
+            <button onClick={() => setProfileTab("coach")}
+              className={`flex-1 min-h-[44px] font-heading uppercase tracking-wide text-sm flex items-center justify-center gap-2 ${profileTab === "coach" ? "bg-primary text-white" : "bg-white text-ink"}`}>
+              <User className="w-4 h-4" />{t("settings.yourCoach")}
+            </button>
+          )}
           <button onClick={() => setProfileTab("profile")}
             className={`flex-1 min-h-[44px] font-heading uppercase tracking-wide text-sm flex items-center justify-center gap-2 ${profileTab === "profile" ? "bg-primary text-white" : "bg-white text-ink"}`}>
             <User className="w-4 h-4" />{t("settings.profile")}

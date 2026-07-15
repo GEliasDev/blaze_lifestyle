@@ -7,49 +7,28 @@ import { BackLink } from "../../components/BackLink.jsx";
 
 const field = "w-full p-3 border-2 border-ink rounded-none";
 
+// Client-only now — coaches no longer self-register through this form (see
+// registerSchema in servidor/src/shared/schemas.js). A coach code is
+// mandatory: every new client starts "pending" on that coach's Clients list
+// until accepted (see RequireApprovedClient in app/router.jsx).
 export function RegisterScreen() {
   const { t } = useTranslation();
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "", role: "client", coachCode: "" });
+  const [form, setForm] = useState({ name: "", email: "", password: "", coachCode: "" });
   const [error, setError] = useState(null);
-  const [coachCode, setCoachCode] = useState(null);
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
   async function onSubmit(e) {
     e.preventDefault();
     setError(null);
     try {
-      const payload = { name: form.name, email: form.email, password: form.password, role: form.role };
-      if (form.role === "client" && form.coachCode) payload.coachCode = form.coachCode;
-      const user = await register(payload);
-      if (user.role === "coach") setCoachCode(user.coachCode);
-      else navigate("/nutrition");
+      await register({ name: form.name, email: form.email, password: form.password, role: "client", coachCode: form.coachCode });
+      navigate("/nutrition");
     } catch (err) {
       setError(err.message || "error");
     }
   }
-
-  if (coachCode) {
-    return (
-      <div className="h-dvh overflow-y-auto flex items-center justify-center p-4">
-        <div className="w-full max-w-[430px] space-y-4 text-center">
-          <img src="/logo-white.webp" alt="Blaze Lifestyle" className="h-28 w-auto mx-auto mb-2" />
-          <h1 className="font-heading uppercase tracking-wide text-2xl">{t("register.yourCode")}</h1>
-          <div className="border-2 border-primary text-primary font-heading text-3xl tracking-[0.3em] py-4">{coachCode}</div>
-          <p className="text-ink/70 text-sm">{t("register.shareCode")}</p>
-          <Button variant="primary" className="w-full" onClick={() => navigate("/coach")}>{t("register.continue")}</Button>
-        </div>
-      </div>
-    );
-  }
-
-  const roleBtn = (value, label) => (
-    <button type="button" onClick={() => setForm({ ...form, role: value })}
-      className={`flex-1 min-h-[44px] border-2 font-heading uppercase tracking-wide ${form.role === value ? "bg-primary text-white border-primary" : "bg-white text-ink border-ink"}`}>
-      {label}
-    </button>
-  );
 
   return (
     <div className="h-dvh overflow-y-auto relative flex items-center justify-center p-4">
@@ -67,14 +46,8 @@ export function RegisterScreen() {
           <input aria-label={t("auth.email")} type="email" value={form.email} onChange={set("email")} className={field} required /></label>
         <label className="block space-y-1"><span className="font-heading uppercase text-sm">{t("auth.password")}</span>
           <input aria-label={t("auth.password")} type="password" value={form.password} onChange={set("password")} className={field} required minLength={8} /></label>
-        <div className="space-y-1">
-          <span className="font-heading uppercase text-sm">{t("register.role")}</span>
-          <div className="flex gap-2">{roleBtn("client", t("register.asClient"))}{roleBtn("coach", t("register.asCoach"))}</div>
-        </div>
-        {form.role === "client" && (
-          <label className="block space-y-1"><span className="font-heading uppercase text-sm">{t("register.coachCode")}</span>
-            <input aria-label={t("register.coachCode")} value={form.coachCode} onChange={set("coachCode")} className={field} /></label>
-        )}
+        <label className="block space-y-1"><span className="font-heading uppercase text-sm">{t("register.coachCode")}</span>
+          <input aria-label={t("register.coachCode")} value={form.coachCode} onChange={set("coachCode")} className={field} required /></label>
         {error && <p role="alert" className="text-danger">{error}</p>}
         <Button type="submit" variant="primary" className="w-full">{t("register.submit")}</Button>
         <button type="button" onClick={() => navigate("/login")} className="w-full text-sm text-ink/70 underline">{t("register.haveAccount")}</button>

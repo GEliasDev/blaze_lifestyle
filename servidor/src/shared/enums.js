@@ -10,6 +10,12 @@ export const MODULE_KEYS = ["nutrition", "exercise", "sleep", "bodyComp"];
 // three. The client sends its own environment via VITE_APP_ENV (see
 // cliente/src/lib/env.js); local dev defaults to "local" with no env var needed.
 export const APP_ENVIRONMENTS = ["local", "preview", "production"];
+// A client linking to a coach (at registration, now mandatory, or later via
+// Settings) starts "pending" until the coach accepts/rejects them from their
+// Clients list — see coaching.service.js. Pre-existing links from before this
+// feature existed are backfilled to "approved" (the DB column's own
+// defaultValue), so already-linked clients aren't retroactively locked out.
+export const COACH_CLIENT_STATUS = ["pending", "approved", "rejected"];
 export const MEAL_CATEGORIES = ["Breakfast", "AM Snack", "Lunch", "PM Snack", "Dinner", "Supplement"];
 export const COMPLIANCE = ["yes", "no", "na"];
 export const EXERCISE_FEELINGS = ["sad", "neutral", "happy"];

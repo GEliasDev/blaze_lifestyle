@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pencil, Search, Trash2 } from "lucide-react";
+import { AlertTriangle, Pencil, Search, Trash2 } from "lucide-react";
 import { api } from "../../lib/api.js";
+import { AppHeader } from "../../components/AppHeader.jsx";
 import { Button } from "../../components/Button.jsx";
 import { Spinner } from "../../components/Spinner.jsx";
 import { TAG_COLOR_PALETTE } from "../exercise/tagColors.js";
+import { COACH_NAV_ITEMS } from "./coachNav.js";
 
 export function CoachTagsScreen() {
   const { t } = useTranslation();
@@ -56,9 +58,9 @@ export function CoachTagsScreen() {
   }
 
   return (
-    <div className="p-4 space-y-6">
-      <h1 className="font-heading uppercase tracking-wide text-2xl">{t("exercise.manageTags")}</h1>
-
+    <>
+      <AppHeader title={t("exercise.manageTags").toUpperCase()} navItems={COACH_NAV_ITEMS} settingsTo="/coach/settings" />
+      <div className="p-4 space-y-6">
       <label className="relative block">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-ink/40" />
         <input
@@ -79,7 +81,7 @@ export function CoachTagsScreen() {
               <button onClick={() => openEdit(tag)} aria-label={t("exercise.editTag")} className="text-ink/60 p-2">
                 <Pencil className="w-5 h-5" />
               </button>
-              {!tag.isSystem && (
+              {!tag.inUse && (
                 <button onClick={() => setConfirmingTag(tag)} aria-label={t("exercise.deleteTag")} className="text-danger p-2">
                   <Trash2 className="w-5 h-5" />
                 </button>
@@ -108,6 +110,12 @@ export function CoachTagsScreen() {
           <button aria-label={t("common.cancel")} onClick={() => setEditingTag(null)} className="absolute inset-0 bg-black/50" />
           <div className="relative bg-white border-2 border-ink w-full max-w-sm p-4 space-y-4">
             <h2 className="font-heading uppercase tracking-wide text-sm">{t("exercise.editTag")}</h2>
+            {editingTag.inUse && (
+              <p className="flex items-start gap-2 text-sm text-danger/90 border-2 border-danger/30 bg-danger/5 p-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                {t("exercise.tagInUseWarning")}
+              </p>
+            )}
             <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder={t("exercise.tagName")}
               className="w-full p-3 border-2 border-border rounded-none" />
             <div className="flex flex-wrap gap-2">
@@ -124,6 +132,7 @@ export function CoachTagsScreen() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
