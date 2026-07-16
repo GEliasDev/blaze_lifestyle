@@ -39,12 +39,6 @@ export function LandingScreen() {
                 <span className="block text-xl sm:text-2xl lg:text-4xl">{t("landing.heroPillarMindset")}</span>
               </span>
             </h1>
-            <Link
-              to="/register"
-              className="font-heading uppercase tracking-wide text-sm lg:text-lg px-6 lg:px-10 min-h-[52px] lg:min-h-[64px] flex items-center justify-center bg-primary text-white border-2 border-primary"
-            >
-              {t("landing.heroCtaPrimary")}
-            </Link>
           </div>
         </div>
       </section>

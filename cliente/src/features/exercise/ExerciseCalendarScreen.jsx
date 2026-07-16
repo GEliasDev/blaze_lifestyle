@@ -47,7 +47,6 @@ export function ExerciseCalendarScreen() {
   const [weekStartsOn] = useState(readWeekStartsOn);
 
   const [filterOpen, setFilterOpen] = useState(false);
-  const [tags, setTags] = useState([]);
   const [tagFilter, setTagFilter] = useState([]);
   const [tagQuery, setTagQuery] = useState("");
   const [feelingFilter, setFeelingFilter] = useState([]);
@@ -55,8 +54,6 @@ export function ExerciseCalendarScreen() {
 
   const adjustedDayNames = [...DAY_NAMES.slice(weekStartsOn), ...DAY_NAMES.slice(0, weekStartsOn)];
   const calendarDays = useMemo(() => getCalendarDays(monthDate, weekStartsOn), [monthDate, weekStartsOn]);
-
-  useEffect(() => { api.get("/exercise-tags").then(setTags).catch(() => setTags([])); }, []);
 
   useEffect(() => {
     const from = calendarDays[0];
@@ -90,16 +87,26 @@ export function ExerciseCalendarScreen() {
     setTagFilter((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
+  // Only offer tags the client has actually used this month — not the full
+  // global tag list — so the picker never shows a tag that would just filter
+  // everything out.
+  const usedTags = useMemo(() => {
+    if (!Array.isArray(entries)) return [];
+    const byId = new Map();
+    for (const e of entries) for (const tag of e.tags) byId.set(tag.id, tag);
+    return [...byId.values()];
+  }, [entries]);
+
   // Selected tags collapse into removable chips (same pattern as
   // ExerciseTagPicker) — the search/list below only ever offers tags not
   // already picked, instead of showing every tag flat all the time.
-  const selectedTags = tags.filter((tag) => tagFilter.includes(tag.id));
+  const selectedTags = usedTags.filter((tag) => tagFilter.includes(tag.id));
   const unselectedTags = useMemo(() => {
     const q = tagQuery.trim().toLowerCase();
-    return tags
+    return usedTags
       .filter((tag) => !tagFilter.includes(tag.id))
       .filter((tag) => !q || tag.name.toLowerCase().includes(q));
-  }, [tags, tagFilter, tagQuery]);
+  }, [usedTags, tagFilter, tagQuery]);
 
   function toggleFeelingFilter(value) {
     setFeelingFilter((prev) => (prev.includes(value) ? prev.filter((x) => x !== value) : [...prev, value]));

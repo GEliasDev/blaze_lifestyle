@@ -264,8 +264,27 @@ export function ExerciseHomeScreen() {
                         </div>
                         <div className="h-5 mt-1 shrink-0" />
                       </div>
-                      <div className={`overflow-x-auto flex-1 min-w-0 ${HIDE_SCROLLBAR}`}>
-                        <div className="h-full flex flex-col" style={{ width: `max(100%, ${points.length * minPointPx}px)` }}>
+                      {/* This scroll container is itself `flex` (row, the
+                          default) so its child stretches to fill its height
+                          via normal flexbox align-items:stretch, instead of
+                          the child relying on `height: 100%` — percentage
+                          heights routinely fail to resolve through an
+                          `overflow-x-auto` ancestor, which was collapsing the
+                          plot box's real height and pushing the low-value
+                          gridline numbers, dots, and the whole month-label
+                          row outside this card's border. */}
+                      <div className={`overflow-x-auto flex-1 min-w-0 flex ${HIDE_SCROLLBAR}`}>
+                        {/* px-4: the first/last point sits at the very edge of
+                            this box (center at (0.5/n)*100%), and its x-axis
+                            label is centered on that point via -translate-x-1/2
+                            — with no margin, the label's own half-width pokes
+                            past x:0 (or the right edge) and this div's
+                            overflow-x-auto clips it (e.g. "MAY" rendering as
+                            "AY" on the first tick). The padding gives labels
+                            room to breathe without touching the point/label
+                            percentage math, since it shrinks this div's own
+                            content box that those percentages are relative to. */}
+                        <div className="flex flex-col px-4 shrink-0" style={{ width: `max(100%, ${points.length * minPointPx}px)` }}>
                           <div className="relative flex-1 min-h-0">
                             {GRID_DAYS.map((d) => (
                               <div
