@@ -178,10 +178,15 @@ export function ExerciseHomeScreen() {
               </div>
             </section>
 
-            {/* flex-1 min-h-0: grows to fill whatever's left down to the
-                bottom nav instead of sitting at a fixed height with empty
-                space below it — see NutritionLayout for the same pattern. */}
-            <section className="border-2 border-border p-4 flex-1 flex flex-col min-h-0">
+            {/* flex-1 grows to fill whatever's left down to the bottom nav
+                instead of sitting at a fixed height with empty space below
+                it (see NutritionLayout for the same pattern) — but NOT
+                min-h-0: the chart row below has its own min-h-56 floor, and
+                without a real min-height here the section would get squeezed
+                shorter than that floor and its content (gridlines, the year
+                nav, month labels) would visually spill out past the card's
+                own border instead of the outer page just scrolling for it. */}
+            <section className="border-2 border-border p-4 flex-1 flex flex-col">
               <div className="flex items-center justify-between mb-3 shrink-0">
                 <h2 className="font-heading uppercase tracking-wide text-base text-ink/60">{t("exercise.weeklyChart")}</h2>
                 <div className="flex border-2 border-border shrink-0">
