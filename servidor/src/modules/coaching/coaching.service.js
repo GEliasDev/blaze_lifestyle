@@ -60,8 +60,10 @@ export const coachingService = {
     return { status: link.status };
   },
 
+  // approved-only for the same reason as assertCoachOwnsClient (lib/ownership.js)
+  // — a rejected or still-pending link shouldn't expose this client's data.
   async getMetrics(coachId, clientId) {
-    const link = await CoachClientModel.findOne({ where: { coachId, clientId } });
+    const link = await CoachClientModel.findOne({ where: { coachId, clientId, status: "approved" } });
     if (!link) throw new HttpError(404, "Client not found");
 
     const entries = await MealEntryModel.findAll({

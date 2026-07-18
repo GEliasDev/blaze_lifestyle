@@ -129,7 +129,9 @@ export const nutritionService = {
     if (requester.role === "client") {
       if (entry.clientId !== requester.sub) throw new HttpError(403, "Forbidden");
     } else {
-      const link = await CoachClientModel.findOne({ where: { coachId: requester.sub, clientId: entry.clientId } });
+      // status: "approved" only — see lib/ownership.js's assertCoachOwnsClient
+      // for why a rejected/pending link shouldn't grant access.
+      const link = await CoachClientModel.findOne({ where: { coachId: requester.sub, clientId: entry.clientId, status: "approved" } });
       if (!link) throw new HttpError(403, "Forbidden");
     }
     return key;

@@ -1,4 +1,4 @@
-import { sequelize } from "./lib/db.js";
+import { sequelize, dedupeUniqueConstraints } from "./lib/db.js";
 import { createApp } from "./app.js";
 import { config } from "./config.js";
 import { exerciseService } from "./modules/exercise/exercise.service.js";
@@ -15,6 +15,11 @@ const app = createApp();
 // planned for production.
 await sequelize.authenticate();
 await sequelize.sync({ alter: true });
+// See dedupeUniqueConstraints's own comment in lib/db.js — sync({alter:true})
+// re-adds a duplicate UNIQUE constraint on every boot for any inline
+// `unique: true` column; this runs after every sync to clean that up so it
+// can never silently reaccumulate across restarts/deploys again.
+await dedupeUniqueConstraints();
 await exerciseService.ensureSystemTags();
 await adminService.ensureModuleFlags();
 await coachingService.ensureSelfClients();
