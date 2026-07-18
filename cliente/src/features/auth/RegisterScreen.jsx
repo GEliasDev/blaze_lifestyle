@@ -45,7 +45,7 @@ export function RegisterScreen() {
         <label className="block space-y-1"><span className="font-heading uppercase text-sm">{t("auth.email")}</span>
           <input aria-label={t("auth.email")} type="email" value={form.email} onChange={set("email")} className={field} required /></label>
         <label className="block space-y-1"><span className="font-heading uppercase text-sm">{t("auth.password")}</span>
-          <input aria-label={t("auth.password")} type="password" value={form.password} onChange={set("password")} className={field} required minLength={8} /></label>
+          <input aria-label={t("auth.password")} type="password" value={form.password} onChange={set("password")} className={field} required /></label>
         <label className="block space-y-1"><span className="font-heading uppercase text-sm">{t("register.coachCode")}</span>
           <input aria-label={t("register.coachCode")} value={form.coachCode} onChange={set("coachCode")} className={field} required /></label>
         {error && <p role="alert" className="text-danger">{error}</p>}

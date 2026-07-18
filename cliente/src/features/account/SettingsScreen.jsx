@@ -24,6 +24,7 @@ export function SettingsScreen() {
   const [email, setEmail] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState(null);
 
@@ -60,13 +61,18 @@ export function SettingsScreen() {
 
   async function savePassword(e) {
     e.preventDefault();
-    setSaving(true);
     setSaveMsg(null);
     setError(null);
+    if (newPassword !== confirmPassword) {
+      setError(t("settings.passwordMismatch"));
+      return;
+    }
+    setSaving(true);
     try {
       await api.post("/me/change-password", { currentPassword, newPassword });
       setCurrentPassword("");
       setNewPassword("");
+      setConfirmPassword("");
       setSaveMsg(t("settings.passwordSaved"));
     } catch (err) {
       setError(err.message);
@@ -147,7 +153,11 @@ export function SettingsScreen() {
             </label>
             <label className="block space-y-1">
               <span className="font-heading uppercase text-sm">{t("settings.newPassword")}</span>
-              <input aria-label={t("settings.newPassword")} type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={field} required minLength={8} />
+              <input aria-label={t("settings.newPassword")} type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={field} required />
+            </label>
+            <label className="block space-y-1">
+              <span className="font-heading uppercase text-sm">{t("settings.confirmPassword")}</span>
+              <input aria-label={t("settings.confirmPassword")} type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={field} required />
             </label>
             {error && <p role="alert" className="text-danger">{error}</p>}
             {saveMsg && <p className="text-success flex items-center gap-1"><Check className="w-4 h-4" />{saveMsg}</p>}

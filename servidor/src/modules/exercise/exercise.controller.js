@@ -93,21 +93,26 @@ export const coachExerciseController = {
   },
 };
 
-// Tags are global (not client-scoped) — any authenticated user can list, only a coach can write.
+// Tags are scoped to a coach (their custom tags + the shared system ones) —
+// any authenticated user can list (resolved to their own coach if they're a
+// client), only a coach can write, and only to their own tags.
 export const tagsController = {
   async list(req, res, next) {
-    try { res.json(await exerciseService.listTags()); } catch (err) { next(err); }
+    try {
+      const coachId = await exerciseService.coachIdFor(req.user);
+      res.json(await exerciseService.listTags(coachId));
+    } catch (err) { next(err); }
   },
   async create(req, res, next) {
-    try { res.status(201).json(await exerciseService.createTag(createTagSchema.parse(req.body))); }
+    try { res.status(201).json(await exerciseService.createTag(req.user.sub, createTagSchema.parse(req.body))); }
     catch (err) { next(err); }
   },
   async update(req, res, next) {
-    try { res.json(await exerciseService.updateTag(req.params.id, updateTagSchema.parse(req.body))); }
+    try { res.json(await exerciseService.updateTag(req.user.sub, req.params.id, updateTagSchema.parse(req.body))); }
     catch (err) { next(err); }
   },
   async remove(req, res, next) {
-    try { await exerciseService.deleteTag(req.params.id); res.status(204).end(); }
+    try { await exerciseService.deleteTag(req.user.sub, req.params.id); res.status(204).end(); }
     catch (err) { next(err); }
   },
 };

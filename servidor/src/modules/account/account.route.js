@@ -10,9 +10,10 @@ const updateProfileSchema = z.object({
   email: z.string().email().optional(),
 });
 
+// No minimum strength/length on newPassword — deliberately unrestricted, just can't be empty.
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1),
-  newPassword: z.string().min(8),
+  newPassword: z.string().min(1),
 });
 
 export const accountRouter = Router(); // mounted at /api/me

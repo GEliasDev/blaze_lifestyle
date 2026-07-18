@@ -294,33 +294,65 @@ export const exerciseService = {
     }
   },
 
+  // Which coach's private tag set a request should see: a coach sees their
+  // own (also covers their "ME" self-tracking, which uses the coach's own
+  // id as clientId); a client sees whichever coach they're approved under.
+  // Null means system tags only (unlinked client, or no coach resolvable).
+  async coachIdFor(user) {
+    if (user.role === "coach") return user.sub;
+    const link = await CoachClientModel.findOne({ where: { clientId: user.sub, status: "approved" } });
+    return link ? link.coachId : null;
+  },
+
   // `inUse` tells the coach panel whether a tag can be deleted outright (not
   // used by any entry yet) or only edited (already attached to entries) —
-  // same rule for system and coach-created tags alike, see deleteTag below.
-  async listTags() {
-    const tags = await ExerciseTagModel.findAll({ order: [["is_system", "DESC"], ["name", "ASC"]] });
-    const links = await ExerciseEntryTagModel.findAll({ attributes: ["tagId"] });
-    const usedIds = new Set(links.map((l) => l.tagId));
+  // scoped to the requester's own clients' entries only, not everyone's:
+  // another coach's usage has no bearing on whether *this* coach can freely
+  // delete a tag. Only genuine system tags (isSystem, coachId null) are
+  // globally shared — a coachId-null tag that ISN'T a system tag is a custom
+  // tag that predates the coachId column (see exerciseTag.model.js) and, since
+  // there's no record of who created it, is excluded from every coach's list
+  // rather than wrongly shown as shared with everyone.
+  async listTags(coachId) {
+    const where = coachId ? { [Op.or]: [{ coachId: null, isSystem: true }, { coachId }] } : { coachId: null, isSystem: true };
+    const tags = await ExerciseTagModel.findAll({ where, order: [["name", "ASC"]] });
+
+    let usedIds = new Set();
+    if (coachId) {
+      const clientLinks = await CoachClientModel.findAll({ where: { coachId }, attributes: ["clientId"] });
+      const clientIds = clientLinks.map((l) => l.clientId);
+      if (clientIds.length) {
+        const entries = await ExerciseEntryModel.findAll({ where: { clientId: clientIds }, attributes: ["id"] });
+        const entryIds = entries.map((e) => e.id);
+        if (entryIds.length) {
+          const links = await ExerciseEntryTagModel.findAll({ where: { entryId: entryIds }, attributes: ["tagId"] });
+          usedIds = new Set(links.map((l) => l.tagId));
+        }
+      }
+    }
     return tags.map((t) => ({ ...serializeTag(t), inUse: usedIds.has(t.id) }));
   },
 
-  async createTag(data) {
-    const existing = await ExerciseTagModel.findOne({ where: { name: data.name } });
+  // Uniqueness is per-coach, not global — two different coaches can each
+  // have their own "Leg Day" tag without colliding.
+  async createTag(coachId, data) {
+    const existing = await ExerciseTagModel.findOne({ where: { name: data.name, coachId } });
     if (existing) throw new HttpError(409, "A tag with this name already exists");
-    const tag = await ExerciseTagModel.create({ name: data.name, color: data.color, isSystem: false });
+    const tag = await ExerciseTagModel.create({ name: data.name, color: data.color, isSystem: false, coachId });
     return serializeTag(tag);
   },
 
   // Name/color only — renaming or recoloring a tag never touches the entries
   // that reference it (they store tagId, not a copy of the name/color), so
   // every existing workout picks up the change automatically. Allowed on
-  // every tag regardless of use, including system tags — the coach panel is
-  // expected to warn when a tag being edited is already in use.
-  async updateTag(id, data) {
+  // system tags by any coach (they're shared, no single owner), but a custom
+  // tag can only be touched by the coach who owns it.
+  async updateTag(coachId, id, data) {
     const tag = await ExerciseTagModel.findByPk(id);
     if (!tag) throw new HttpError(404, "Tag not found");
+    if (tag.coachId && tag.coachId !== coachId) throw new HttpError(403, "Forbidden");
     if (data.name) {
-      const existing = await ExerciseTagModel.findOne({ where: { name: data.name, id: { [Op.ne]: id } } });
+      const existing = await ExerciseTagModel.findOne({ where: { name: data.name, coachId: tag.coachId, id: { [Op.ne]: id } } });
       if (existing) throw new HttpError(409, "A tag with this name already exists");
     }
     await tag.update(data);
@@ -328,10 +360,12 @@ export const exerciseService = {
   },
 
   // A tag (system or coach-created) can only be deleted once nothing
-  // references it — in use means edit-only (see updateTag).
-  async deleteTag(id) {
+  // references it — in use means edit-only (see updateTag). Same ownership
+  // rule as updateTag: a coach can't delete another coach's private tag.
+  async deleteTag(coachId, id) {
     const tag = await ExerciseTagModel.findByPk(id);
     if (!tag) throw new HttpError(404, "Tag not found");
+    if (tag.coachId && tag.coachId !== coachId) throw new HttpError(403, "Forbidden");
     const inUse = await ExerciseEntryTagModel.findOne({ where: { tagId: id } });
     if (inUse) throw new HttpError(409, "Tag is in use by existing entries");
     await tag.destroy();

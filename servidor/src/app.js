@@ -25,6 +25,14 @@ export function createApp() {
 
   app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
   app.use("/api/auth", authRouter);
+  // accountRouter first: it only defines /coach, /profile, /change-password
+  // and falls through for anything else, but clientEntriesRouter/
+  // clientExerciseRouter apply roleGuard("client") via .use() — router-level
+  // middleware that runs for EVERY request reaching that router, not just
+  // its own defined routes. Mounted before accountRouter, that blanket guard
+  // would reject a coach's /api/me/profile or /change-password request
+  // before it ever reached the router that actually handles it.
+  app.use("/api/me", accountRouter);
   app.use("/api/me", clientEntriesRouter);
   app.use("/api/me", clientExerciseRouter);
   app.use("/api/photos", photosRouter);
@@ -32,7 +40,6 @@ export function createApp() {
   app.use("/api/coach", coachEntriesRouter);
   app.use("/api/coach", coachExerciseRouter);
   app.use("/api/exercise-tags", tagsRouter);
-  app.use("/api/me", accountRouter);
   app.use("/api/module-flags", moduleFlagsRouter);
   app.use("/api/admin", adminRouter);
   app.use(errorHandler);
