@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Clock, Pencil } from "lucide-react";
+import { Check, Clock, Pencil } from "lucide-react";
 import { api } from "../../lib/api.js";
 import { AppHeader } from "../../components/AppHeader.jsx";
 import { Spinner } from "../../components/Spinner.jsx";
@@ -18,6 +18,7 @@ export function ClientsScreen() {
   const [editingClient, setEditingClient] = useState(null); // client being renamed, or null
   const [nicknameInput, setNicknameInput] = useState("");
   const [nicknameSaving, setNicknameSaving] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   function load() {
     setError(false);
@@ -35,6 +36,34 @@ export function ClientsScreen() {
   function openEditNickname(client) {
     setEditingClient(client);
     setNicknameInput(client.nickname ?? "");
+  }
+
+  // navigator.clipboard.writeText requires a secure context (HTTPS or
+  // localhost) — on a LAN dev URL like http://192.168.1.25:5173 it rejects,
+  // which (unguarded) aborted this function before the confirmation ever
+  // showed. Falls back to the older execCommand approach, which still works
+  // over plain HTTP, so the button behaves the same in dev and in prod.
+  async function copyCoachCode() {
+    const text = user.coachCode;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      setCodeCopied(true);
+      setTimeout(() => setCodeCopied(false), 2000);
+    } catch {
+      // Clipboard genuinely unavailable — nothing else to fall back to.
+    }
   }
 
   async function onSaveNickname() {
@@ -56,7 +85,13 @@ export function ClientsScreen() {
             <div className="font-heading uppercase text-xs text-ink/60">{t("coach.yourCode")}</div>
             <div className="font-heading text-2xl tracking-[0.3em] text-primary">{user.coachCode}</div>
           </div>
-          <button onClick={() => navigator.clipboard?.writeText(user.coachCode)} className="border-2 border-ink min-h-[44px] px-3 font-heading uppercase text-sm">{t("coach.copy")}</button>
+          {codeCopied ? (
+            <span className="flex items-center gap-1 text-success font-heading uppercase text-sm">
+              <Check className="w-4 h-4" />{t("coach.codeCopied")}
+            </span>
+          ) : (
+            <button onClick={copyCoachCode} className="border-2 border-ink min-h-[44px] px-3 font-heading uppercase text-sm">{t("coach.copy")}</button>
+          )}
         </div>
       )}
       {error ? (

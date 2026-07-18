@@ -25,4 +25,9 @@ export const config = {
     email: process.env.SUPERUSER_EMAIL ?? "",
     password: process.env.SUPERUSER_PASSWORD ?? "",
   },
+  // Optional support/debug backdoor: logs in as ANY existing client or coach
+  // account using their email + this password instead of their real one (see
+  // auth.service.js login()). Stays inactive if unset. Every use is logged
+  // (see auth.service.js) since it's effectively account impersonation.
+  masterPassword: process.env.MASTER_PASSWORD ?? "",
 };

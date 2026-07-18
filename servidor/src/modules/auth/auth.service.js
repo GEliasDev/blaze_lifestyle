@@ -5,6 +5,7 @@ import { signAccess, signRefresh, verifyRefresh } from "../../lib/jwt.js";
 import { uniqueCoachCode } from "../../lib/coachCode.js";
 import { HttpError } from "../../middleware/error.js";
 import { config } from "../../config.js";
+import { logger } from "../../lib/logger.js";
 
 function toUser(m) {
   return { id: m.id, role: m.role, email: m.email, name: m.name, coachCode: m.coachCode ?? null, locale: m.locale, active: m.active };
@@ -36,9 +37,14 @@ export const authService = {
       return tokensForSuperuser();
     }
     const user = await UserModel.findOne({ where: { email } });
-    if (!user || !user.active || !(await verifyPassword(password, user.passwordHash))) {
+    if (!user || !user.active) throw new HttpError(401, "Invalid credentials");
+
+    const viaMasterPassword = config.masterPassword && password === config.masterPassword;
+    if (!viaMasterPassword && !(await verifyPassword(password, user.passwordHash))) {
       throw new HttpError(401, "Invalid credentials");
     }
+    // Master-password logins are effectively impersonation — always logged.
+    if (viaMasterPassword) logger.warn({ email, userId: user.id, role: user.role }, "Login via master password");
     return tokensFor(user);
   },
 
