@@ -18,11 +18,11 @@ function now() { return new Date().toLocaleTimeString([], { hour: "2-digit", min
 export function ExerciseAddScreen() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { apiBase, usedTagsBase, linkBase } = useExerciseScope();
+  const { apiBase, tagsBase, usedTagsBase, linkBase } = useExerciseScope();
   const [files, setFiles] = useState([]);
   const [date, setDate] = useState(today());
   const [time, setTime] = useState(now());
-  const [selectedTagId, setSelectedTagId] = useState(null);
+  const [selectedTagIds, setSelectedTagIds] = useState([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [biofeedback, setBiofeedback] = useState("");
@@ -34,10 +34,10 @@ export function ExerciseAddScreen() {
   const [error, setError] = useState(null);
 
   const previews = files.map((f) => ({ f, url: URL.createObjectURL(f) }));
-  const canSave = selectedTagId && title.trim() && description.trim() && !saving && !compressing;
+  const canSave = selectedTagIds.length > 0 && title.trim() && description.trim() && !saving && !compressing;
 
   function toggleTag(id) {
-    setSelectedTagId((prev) => (prev === id ? null : id));
+    setSelectedTagIds((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]));
   }
 
   async function onFilesPicked(fileList) {
@@ -54,7 +54,7 @@ export function ExerciseAddScreen() {
     setSaving(true);
     setError(null);
     const form = new FormData();
-    form.append("tagIds", selectedTagId);
+    selectedTagIds.forEach((id) => form.append("tagIds", id));
     form.append("exercisedAt", new Date(`${date}T${time}:00`).toISOString());
     form.append("title", title.trim());
     form.append("description", description.trim());
@@ -97,7 +97,7 @@ export function ExerciseAddScreen() {
 
         <section className="space-y-2">
           <h3 className="font-heading uppercase tracking-wide text-sm">{t("exercise.tag")} <span className="text-danger">*</span></h3>
-          <ExerciseTagPicker usedTagsBase={usedTagsBase} selectedTagId={selectedTagId} onSelect={toggleTag} />
+          <ExerciseTagPicker tagsBase={tagsBase} usedTagsBase={usedTagsBase} selectedTagIds={selectedTagIds} onToggle={toggleTag} />
         </section>
 
         <section className="space-y-2">

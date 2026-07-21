@@ -20,10 +20,9 @@ import { ExerciseCalendarScreen } from "../features/exercise/ExerciseCalendarScr
 import { ExerciseAddScreen } from "../features/exercise/ExerciseAddScreen.jsx";
 import { ExerciseEntryDetailScreen } from "../features/exercise/ExerciseEntryDetailScreen.jsx";
 import { ExerciseEditEntryScreen } from "../features/exercise/ExerciseEditEntryScreen.jsx";
+import { ExerciseTagsScreen } from "../features/exercise/ExerciseTagsScreen.jsx";
+import { ExerciseAddTagScreen } from "../features/exercise/ExerciseAddTagScreen.jsx";
 import { ClientsScreen } from "../features/coach/ClientsScreen.jsx";
-import { CoachTagsLayout } from "../features/coach/CoachTagsLayout.jsx";
-import { CoachTagsScreen } from "../features/coach/CoachTagsScreen.jsx";
-import { CoachAddTagScreen } from "../features/coach/CoachAddTagScreen.jsx";
 import { CoachClientLayout } from "../features/coach/CoachClientLayout.jsx";
 import { CoachClientHome } from "../features/coach/CoachClientHome.jsx";
 import { SettingsScreen } from "../features/account/SettingsScreen.jsx";
@@ -133,6 +132,8 @@ export const routes = [
               moduleRoute("/exercise", "exercise", "module.exercise", <ExerciseLayout />, [
                 { index: true, element: <ExerciseHomeScreen /> },
                 { path: "calendar", element: <ExerciseCalendarScreen /> },
+                { path: "tags", element: <ExerciseTagsScreen /> },
+                { path: "tags/add", element: <ExerciseAddTagScreen /> },
                 { path: "add", element: <ExerciseAddScreen /> },
                 { path: ":id", element: <ExerciseEntryDetailScreen /> },
                 { path: ":id/edit", element: <ExerciseEditEntryScreen /> },
@@ -153,14 +154,6 @@ export const routes = [
         element: <CoachLayout />,
         children: [
           { path: "/coach", element: <ClientsScreen /> },
-          {
-            path: "/coach/tags",
-            element: <CoachTagsLayout />,
-            children: [
-              { index: true, element: <CoachTagsScreen /> },
-              { path: "add", element: <CoachAddTagScreen /> },
-            ],
-          },
           { path: "/coach/settings", element: <SettingsScreen /> },
         ],
       },
@@ -181,6 +174,8 @@ export const routes = [
           moduleRoute("exercise", "exercise", "module.exercise", <ExerciseLayout />, [
             { index: true, element: <ExerciseHomeScreen /> },
             { path: "calendar", element: <ExerciseCalendarScreen /> },
+            { path: "tags", element: <ExerciseTagsScreen /> },
+            { path: "tags/add", element: <ExerciseAddTagScreen /> },
             { path: "add", element: <ExerciseAddScreen /> },
             { path: ":id", element: <ExerciseEntryDetailScreen /> },
             { path: ":id/edit", element: <ExerciseEditEntryScreen /> },

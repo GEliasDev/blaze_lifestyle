@@ -8,15 +8,13 @@ export const MAX_PHOTOS = 5;
 // biofeedback: always send the field, "" means "no value").
 const feelingSchema = z.union([z.enum(EXERCISE_FEELINGS), z.literal("")]).optional();
 
-// An entry takes exactly one tag (the UI is single-select) — the field is
-// still named "tagIds" and sent/stored as a one-element array so the
-// underlying many-to-many join table (exercise_entry_tags) doesn't need to
-// change if multi-tag entries come back later. Multipart form fields arrive
-// as a single string when only one "tagIds" field was sent (always true now,
-// but also normalizes the case of a stray duplicate field) — this wraps that
-// into an array before validating.
+// An entry takes 1-10 tags (multi-select) — stored via the many-to-many join
+// table exercise_entry_tags, one row per tag. Multipart form fields arrive as
+// a single string when only one "tagIds" field was sent (still the common
+// case) or an array when several are — this normalizes either into an array
+// before validating.
 const toArray = (v) => (v === undefined ? [] : Array.isArray(v) ? v : [v]);
-const tagIdsSchema = z.preprocess(toArray, z.array(z.string().uuid()).length(1));
+const tagIdsSchema = z.preprocess(toArray, z.array(z.string().uuid()).min(1).max(10));
 
 // Multipart booleans arrive as the strings "true"/"false" — same convention
 // as Nutrition's hasSymptoms (see nutrition.schema.js).

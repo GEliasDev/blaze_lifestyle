@@ -11,6 +11,7 @@ export function useExerciseScope() {
       clientId,
       apiBase: `/coach/clients/${clientId}/exercise-entries`,
       statsBase: `/coach/clients/${clientId}/exercise-stats`,
+      tagsBase: `/coach/clients/${clientId}/exercise-tags`,
       usedTagsBase: `/coach/clients/${clientId}/exercise-tags/used`,
       linkBase: `/coach/clients/${clientId}/exercise`,
     };
@@ -20,6 +21,7 @@ export function useExerciseScope() {
     clientId: null,
     apiBase: "/me/exercise-entries",
     statsBase: "/me/exercise-stats",
+    tagsBase: "/me/exercise-tags",
     usedTagsBase: "/me/exercise-tags/used",
     linkBase: "/exercise",
   };

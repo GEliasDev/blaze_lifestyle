@@ -1,14 +1,17 @@
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Home, Calendar, Plus } from "lucide-react";
+import { Home, Calendar, Tag, Plus } from "lucide-react";
 
-// Same 3 items for both the client and the coach (the coach has full access
-// to a client's Exercise data, not read-only).
+// Same 4 items for both the client and the coach (the coach has full access
+// to a client's Exercise data, not read-only) — a coach browsing a real
+// client can still reach Tags to see that client's set, though writes there
+// are read-only for anyone but the tags' own owner (see ExerciseTagsScreen).
 export function ExerciseBottomNav({ linkBase }) {
   const { t } = useTranslation();
   const items = [
     { to: "", icon: Home, key: "exercise.navHome", end: true },
     { to: "calendar", icon: Calendar, key: "exercise.navCalendar" },
+    { to: "tags", icon: Tag, key: "exercise.manageTags" },
     { to: "add", icon: Plus, key: "exercise.navAdd" },
   ];
   return (

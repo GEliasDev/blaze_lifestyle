@@ -91,17 +91,39 @@ export const coachExerciseController = {
       res.json(await exerciseService.usedTagIds(req.params.clientId));
     } catch (err) { next(err); }
   },
+  // Same full access as entries above (see the coachExerciseRouter comment
+  // in exercise.route.js) — a coach can list/create/edit/delete tags for any
+  // of their own approved clients, not just their own "ME" pseudo-client.
+  async listTags(req, res, next) {
+    try {
+      await assertCoachOwnsClient(req.user.sub, req.params.clientId);
+      res.json(await exerciseService.listTags(req.params.clientId));
+    } catch (err) { next(err); }
+  },
+  async createTag(req, res, next) {
+    try {
+      await assertCoachOwnsClient(req.user.sub, req.params.clientId);
+      res.status(201).json(await exerciseService.createTag(req.params.clientId, createTagSchema.parse(req.body)));
+    } catch (err) { next(err); }
+  },
+  async updateTag(req, res, next) {
+    try {
+      await assertCoachOwnsClient(req.user.sub, req.params.clientId);
+      res.json(await exerciseService.updateTag(req.params.clientId, req.params.id, updateTagSchema.parse(req.body)));
+    } catch (err) { next(err); }
+  },
+  async removeTag(req, res, next) {
+    try {
+      await assertCoachOwnsClient(req.user.sub, req.params.clientId);
+      await exerciseService.deleteTag(req.params.clientId, req.params.id);
+      res.status(204).end();
+    } catch (err) { next(err); }
+  },
 };
 
-// Tags are scoped to a coach (their custom tags + the shared system ones) —
-// any authenticated user can list (resolved to their own coach if they're a
-// client), only a coach can write, and only to their own tags.
 export const tagsController = {
   async list(req, res, next) {
-    try {
-      const coachId = await exerciseService.coachIdFor(req.user);
-      res.json(await exerciseService.listTags(coachId));
-    } catch (err) { next(err); }
+    try { res.json(await exerciseService.listTags(req.user.sub)); } catch (err) { next(err); }
   },
   async create(req, res, next) {
     try { res.status(201).json(await exerciseService.createTag(req.user.sub, createTagSchema.parse(req.body))); }

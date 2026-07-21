@@ -21,12 +21,12 @@ export function ExerciseEditEntryScreen() {
   const { id } = useParams();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { apiBase, usedTagsBase, linkBase } = useExerciseScope();
+  const { apiBase, tagsBase, usedTagsBase, linkBase } = useExerciseScope();
   const [entry, setEntry] = useState(null);
   const [form, setForm] = useState(null);
   const [kept, setKept] = useState([]);
   const [newFiles, setNewFiles] = useState([]);
-  const [selectedTagId, setSelectedTagId] = useState(null);
+  const [selectedTagIds, setSelectedTagIds] = useState([]);
   const [feeling, setFeeling] = useState("");
   const [hasAlert, setHasAlert] = useState(false);
   const [alertNote, setAlertNote] = useState("");
@@ -38,10 +38,7 @@ export function ExerciseEditEntryScreen() {
     api.get(`${apiBase}/${id}`).then((e) => {
       setEntry(e);
       setKept(e.photos);
-      // Older entries could have more than one tag from before this screen
-      // was restricted to a single selection — keep just the first on load;
-      // saving will collapse it down to that one.
-      setSelectedTagId(e.tags[0]?.id ?? null);
+      setSelectedTagIds(e.tags.map((tag) => tag.id));
       setFeeling(e.feeling ?? "");
       setHasAlert(e.hasAlert);
       setAlertNote(e.alertNote ?? "");
@@ -53,11 +50,13 @@ export function ExerciseEditEntryScreen() {
   if (entry === false) return (<><AppHeader title={t("exercise.editEntry").toUpperCase()} showBack /><p className="p-8 text-center text-ink/50">{t("exercise.noEntries")}</p></>);
 
   function set(patch) { setForm((f) => ({ ...f, ...patch })); }
-  function toggleTag(tagId) { setSelectedTagId((prev) => (prev === tagId ? null : tagId)); }
+  function toggleTag(tagId) {
+    setSelectedTagIds((prev) => (prev.includes(tagId) ? prev.filter((t) => t !== tagId) : [...prev, tagId]));
+  }
 
   const newPreviews = newFiles.map((f) => ({ f, url: URL.createObjectURL(f) }));
   const total = kept.length + newFiles.length;
-  const canSave = selectedTagId && form.title.trim() && form.description.trim() && !saving && !compressing;
+  const canSave = selectedTagIds.length > 0 && form.title.trim() && form.description.trim() && !saving && !compressing;
 
   async function onFilesPicked(fileList) {
     setCompressing(true);
@@ -73,7 +72,7 @@ export function ExerciseEditEntryScreen() {
     setSaving(true);
     setError(null);
     const fd = new FormData();
-    fd.append("tagIds", selectedTagId);
+    selectedTagIds.forEach((tagId) => fd.append("tagIds", tagId));
     fd.append("exercisedAt", new Date(`${form.date}T${form.time}:00`).toISOString());
     fd.append("title", form.title.trim());
     fd.append("description", form.description.trim());
@@ -125,7 +124,7 @@ export function ExerciseEditEntryScreen() {
 
         <section className="space-y-2">
           <h3 className="font-heading uppercase tracking-wide text-sm">{t("exercise.tag")} <span className="text-danger">*</span></h3>
-          <ExerciseTagPicker usedTagsBase={usedTagsBase} selectedTagId={selectedTagId} onSelect={toggleTag} />
+          <ExerciseTagPicker tagsBase={tagsBase} usedTagsBase={usedTagsBase} selectedTagIds={selectedTagIds} onToggle={toggleTag} />
         </section>
 
         <section className="space-y-2">

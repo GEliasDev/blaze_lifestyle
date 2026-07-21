@@ -5,7 +5,7 @@ import { CoachSidebar } from "../../components/CoachSidebar.jsx";
 // (lg+), completely hidden on mobile — each routed screen's own AppHeader
 // carries the hamburger drawer for navigation there instead (see
 // coachNav.js's COACH_NAV_ITEMS, passed into AppHeader by ClientsScreen/
-// CoachTagsScreen/CoachSettingsScreen).
+// SettingsScreen).
 export function CoachLayout() {
   return (
     <div className="h-dvh flex flex-col lg:grid lg:grid-cols-[220px_1fr] bg-white">

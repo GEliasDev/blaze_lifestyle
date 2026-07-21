@@ -1,15 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle, Pencil, Search, Trash2 } from "lucide-react";
+import { AlertTriangle, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { api } from "../../lib/api.js";
 import { AppHeader } from "../../components/AppHeader.jsx";
 import { Button } from "../../components/Button.jsx";
 import { Spinner } from "../../components/Spinner.jsx";
-import { TAG_COLOR_PALETTE } from "../exercise/tagColors.js";
-import { COACH_NAV_ITEMS } from "./coachNav.js";
+import { useExerciseScope } from "./useExerciseScope.js";
+import { TAG_COLOR_PALETTE } from "./tagColors.js";
 
-export function CoachTagsScreen() {
+// Each client's own tag set now (previously the coach's CoachTagsScreen) —
+// shared by the plain client route (/exercise/tags) and the coach's own
+// nested route (/coach/clients/:clientId/exercise/tags, same component tree
+// as Home/Calendar/Add), same isCoach/showBack pattern as the rest of
+// Exercise. A coach has the same full create/edit/delete access to any of
+// their own clients' tags as they already have for entries — not read-only,
+// not limited to their own "ME" pseudo-client (see coachExerciseController
+// in the server's exercise.controller.js).
+export function ExerciseTagsScreen() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { isCoach, clientId, tagsBase, linkBase } = useExerciseScope();
   const [tags, setTags] = useState(null);
   const [query, setQuery] = useState("");
   const [error, setError] = useState(null);
@@ -21,8 +32,8 @@ export function CoachTagsScreen() {
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState(null);
 
-  function load() { api.get("/exercise-tags").then(setTags).catch(() => setTags([])); }
-  useEffect(() => { load(); }, []);
+  function load() { api.get(tagsBase).then(setTags).catch(() => setTags([])); }
+  useEffect(() => { load(); }, [tagsBase]);
 
   const filteredTags = useMemo(() => {
     if (!tags) return tags;
@@ -33,7 +44,7 @@ export function CoachTagsScreen() {
   async function onDelete() {
     setDeleting(true);
     setError(null);
-    try { await api.del(`/exercise-tags/${confirmingTag.id}`); setConfirmingTag(null); load(); }
+    try { await api.del(`${tagsBase}/${confirmingTag.id}`); setConfirmingTag(null); load(); }
     catch (err) { setError(err.message); }
     finally { setDeleting(false); }
   }
@@ -50,17 +61,33 @@ export function CoachTagsScreen() {
     setEditSaving(true);
     setEditError(null);
     try {
-      await api.patch(`/exercise-tags/${editingTag.id}`, { name: editName.trim(), color: editColor });
+      await api.patch(`${tagsBase}/${editingTag.id}`, { name: editName.trim(), color: editColor });
       setEditingTag(null);
       load();
     } catch (err) { setEditError(err.message); }
     finally { setEditSaving(false); }
   }
 
+  const addAction = (
+    <button
+      onClick={() => navigate(`${linkBase}/tags/add`)}
+      aria-label={t("exercise.newTag")}
+      className="min-h-[44px] min-w-[44px] flex items-center justify-center text-white/80"
+    >
+      <Plus className="w-6 h-6" />
+    </button>
+  );
+
   return (
     <>
-      <AppHeader title={t("exercise.manageTags").toUpperCase()} navItems={COACH_NAV_ITEMS} settingsTo="/coach/settings" />
-      <div className="p-4 space-y-6">
+      <AppHeader
+        title={t("exercise.manageTags").toUpperCase()}
+        showBack={isCoach}
+        backTo={isCoach ? `/coach/clients/${clientId}` : null}
+        desktopBackTo={isCoach ? "/coach" : null}
+        action={addAction}
+      />
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
       <label className="relative block">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-ink/40" />
         <input

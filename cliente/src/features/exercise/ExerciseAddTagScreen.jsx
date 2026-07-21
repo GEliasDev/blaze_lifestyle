@@ -4,13 +4,16 @@ import { useTranslation } from "react-i18next";
 import { api } from "../../lib/api.js";
 import { AppHeader } from "../../components/AppHeader.jsx";
 import { Button } from "../../components/Button.jsx";
-import { TAG_COLOR_PALETTE } from "../exercise/tagColors.js";
+import { useExerciseScope } from "./useExerciseScope.js";
+import { TAG_COLOR_PALETTE } from "./tagColors.js";
 
-// Reached via the "+" tab in CoachTagsBottomNav — creating a tag is its own
-// screen now instead of an inline card on the list (see CoachTagsScreen.jsx).
-export function CoachAddTagScreen() {
+// Each client's own tag set now (previously the coach's CoachAddTagScreen) —
+// shared by the plain client route and a coach's own "ME" self-tracking, see
+// ExerciseTagsScreen.jsx.
+export function ExerciseAddTagScreen() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { tagsBase, linkBase } = useExerciseScope();
   const [name, setName] = useState("");
   const [color, setColor] = useState(TAG_COLOR_PALETTE[0]);
   const [saving, setSaving] = useState(false);
@@ -20,15 +23,15 @@ export function CoachAddTagScreen() {
     if (!name.trim()) return;
     setSaving(true);
     setError(null);
-    try { await api.post("/exercise-tags", { name: name.trim(), color }); navigate("/coach/tags"); }
+    try { await api.post(tagsBase, { name: name.trim(), color }); navigate(`${linkBase}/tags`); }
     catch (err) { setError(err.message); }
     finally { setSaving(false); }
   }
 
   return (
     <>
-      <AppHeader title={t("exercise.newTag").toUpperCase()} showBack backTo="/coach/tags" />
-      <div className="p-4 space-y-6">
+      <AppHeader title={t("exercise.newTag").toUpperCase()} showBack backTo={`${linkBase}/tags`} />
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
         <div className="border-2 border-border p-4 space-y-3">
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("exercise.tagName")}
             className="w-full p-3 border-2 border-border rounded-none" />
